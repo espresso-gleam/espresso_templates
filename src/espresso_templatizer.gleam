@@ -114,7 +114,7 @@ pub fn text() -> nibble.Parser(Element, a) {
 }
 
 pub fn document() -> nibble.Parser(Element, a) {
-  one_of([element(), text()])
+  one_of([comment(), element(), text()])
 }
 
 pub fn main() {

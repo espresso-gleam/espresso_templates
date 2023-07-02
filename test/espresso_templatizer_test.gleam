@@ -73,6 +73,7 @@ pub fn document_element_nested_test() {
   let result =
     run(
       "<div>
+      <%% Commented thing %%>
     <p>Things go <b>here</b> but not
     over here</p>
   </div>",
@@ -85,6 +86,7 @@ pub fn document_element_nested_test() {
       "div",
       [],
       [
+        Comment("Commented thing"),
         Element(
           "p",
           [],
