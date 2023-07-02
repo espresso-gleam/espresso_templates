@@ -4,6 +4,7 @@ import esgleam from "./esgleam/esgleam.mjs";
 
 esbuild
   .build({
+    platform: "node",
     entryPoints: ["./src/espresso_templatizer.gleam"],
     bundle: true,
     outfile: "./build/main.js",

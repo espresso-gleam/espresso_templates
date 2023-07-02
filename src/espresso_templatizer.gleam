@@ -184,7 +184,7 @@ pub fn documents() -> nibble.Parser(List(Element), a) {
 }
 
 pub external fn stdin() -> String =
-  "os.js" "stdin"
+  "./os.js" "stdin"
 
 pub fn main() {
   let input = stdin()
