@@ -1,8 +1,8 @@
 import gleeunit
 import gleeunit/should
 import espresso_templatizer.{
-  Attribute, Comment, Element, Text, attribute, attributes, comment, document,
-  element, text,
+  Attribute, Comment, Element, Import, Text, attribute, attributes, comment,
+  document, element, text,
 }
 import nibble.{run}
 import gleam/io
@@ -87,6 +87,7 @@ pub fn document_element_nested_test() {
       "div",
       [],
       [
+        Import("import gleam/list"),
         Comment("Commented thing"),
         Element(
           "p",
