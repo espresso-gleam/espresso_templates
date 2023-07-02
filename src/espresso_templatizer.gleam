@@ -114,6 +114,7 @@ pub fn children() {
 pub fn element() {
   succeed(function.curry3(Element))
   // Tag name
+  |> drop(whitespace())
   |> drop(string("<"))
   |> keep(take_until(fn(c) { c == " " || c == ">" }))
   |> drop(whitespace())

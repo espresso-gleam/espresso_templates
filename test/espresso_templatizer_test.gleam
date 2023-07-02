@@ -87,7 +87,6 @@ pub fn document_element_nested_test() {
   should.equal(
     result,
     Ok([
-      Text(""),
       Element("div", [], [Text("Top level thing here")]),
       Element(
         "div",
