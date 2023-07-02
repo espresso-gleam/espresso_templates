@@ -1,7 +1,7 @@
-import gleam/function.{curry2}
+import gleam/function.{curry2, curry3}
 import nibble.{
-  backtrackable, commit, drop, eof, grapheme, int, keep, loop, many, map, one_of,
-  spaces, string, succeed, take_until, take_while, then, whitespace,
+  commit, drop, eof, keep, loop, one_of, string, succeed, take_until, take_while,
+  then, whitespace,
 }
 import gleam/list
 import gleam/io
@@ -18,6 +18,7 @@ type Children =
   List(Element)
 
 pub type Element {
+  Preamble
   Text(String)
   Element(tag_name: String, attributes: Attributes, children: Children)
   Comment(String)
@@ -40,6 +41,23 @@ pub fn comment() {
   |> drop(string("%%>"))
 }
 
+pub fn html_comment() {
+  succeed(Comment)
+  |> drop(whitespace())
+  |> drop(string("<!"))
+  |> drop(take_while(fn(c) { c == "-" }))
+  |> drop(whitespace())
+  |> keep(
+    take_while(fn(c) { c != "-" })
+    |> then(fn(comment) {
+      comment
+      |> string.trim()
+      |> commit()
+    }),
+  )
+  |> drop(string("-->"))
+}
+
 pub fn import_block() {
   succeed(Import)
   |> drop(whitespace())
@@ -54,6 +72,13 @@ pub fn import_block() {
     }),
   )
   |> drop(string("^%>"))
+}
+
+pub fn preamble() {
+  succeed(Preamble)
+  |> drop(whitespace())
+  |> drop(string("<!DOCTYPE html>"))
+  |> drop(whitespace())
 }
 
 /// Parses a list of attributes
@@ -81,7 +106,7 @@ pub fn attributes() {
 /// Parses html attributes
 /// class="stuff" -> Attribute("class", "stuff")
 pub fn attribute() -> nibble.Parser(Attribute, a) {
-  succeed(function.curry2(Attribute))
+  succeed(curry2(Attribute))
   |> drop(whitespace())
   |> keep(take_while(fn(c) { c != "=" }))
   |> drop(string("=\""))
@@ -112,7 +137,7 @@ pub fn children() {
 }
 
 pub fn element() {
-  succeed(function.curry3(Element))
+  succeed(curry3(Element))
   // Tag name
   |> drop(whitespace())
   |> drop(string("<"))
@@ -132,7 +157,14 @@ pub fn text() -> nibble.Parser(Element, a) {
 }
 
 pub fn document() -> nibble.Parser(Element, a) {
-  one_of([import_block(), comment(), element(), text()])
+  one_of([
+    preamble(),
+    import_block(),
+    comment(),
+    html_comment(),
+    element(),
+    text(),
+  ])
 }
 
 pub fn documents() -> nibble.Parser(List(Element), a) {
@@ -143,7 +175,7 @@ pub fn documents() -> nibble.Parser(List(Element), a) {
         eof()
         |> nibble.replace(list.reverse(documents))
         |> nibble.map(nibble.Break),
-        one_of([import_block(), comment(), element(), text()])
+        document()
         |> nibble.map(fn(el) { { nibble.Continue([el, ..documents]) } })
         |> drop(whitespace()),
       ])
@@ -151,11 +183,15 @@ pub fn documents() -> nibble.Parser(List(Element), a) {
   )
 }
 
+pub external fn stdin() -> String =
+  "os.js" "stdin"
+
 pub fn main() {
-  let parser = attribute()
-  case nibble.run("class=\"text-black\"", parser) {
-    Ok(point) -> {
-      io.debug(point)
+  let input = stdin()
+  let result = nibble.run(input, documents())
+  case result {
+    Ok(documents) -> {
+      io.debug(documents)
       ""
     }
     Error(error) -> {

@@ -1,11 +1,10 @@
 import gleeunit
 import gleeunit/should
 import espresso_templatizer.{
-  Attribute, Comment, Element, Import, Text, attribute, attributes, comment,
-  document, documents, element, text,
+  Attribute, Comment, Element, Import, Preamble, Text, attribute, attributes,
+  comment, document, documents, html_comment, text,
 }
 import nibble.{run}
-import gleam/io
 
 pub fn main() {
   gleeunit.main()
@@ -48,6 +47,12 @@ pub fn comment_parser_test() {
       "Multi line comments inside of this thing\n    this one has\n    more than one line.",
     )),
   )
+}
+
+pub fn html_comment_test() {
+  let result = run("<!-- Write your comments here -->", html_comment())
+
+  should.equal(result, Ok(Comment("Write your comments here")))
 }
 
 // Elements
@@ -101,6 +106,46 @@ pub fn document_element_nested_test() {
               Text("Things go "),
               Element("b", [], [Text("here")]),
               Text("but not\n    over here"),
+            ],
+          ),
+        ],
+      ),
+    ]),
+  )
+}
+
+pub fn document_header_test() {
+  let result =
+    run(
+      "
+      <!DOCTYPE html>
+<html lang=\"en\">
+  <!-- This is the head -->
+  <head></head>
+  <body>
+    <h1>Test</h1>
+    <p>Test</p>
+  </body>
+</html>",
+      documents(),
+    )
+
+  should.equal(
+    result,
+    Ok([
+      Preamble,
+      Element(
+        "html",
+        [Attribute("lang", "en")],
+        [
+          Comment("This is the head"),
+          Element("head", [], []),
+          Element(
+            "body",
+            [],
+            [
+              Element("h1", [], [Text("Test")]),
+              Element("p", [], [Text("Test")]),
             ],
           ),
         ],
