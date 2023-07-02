@@ -1,0 +1,19 @@
+{
+  "name": "espresso_templatizer",
+  "version": "1.0.0",
+  "description": "[![Package Version](https://img.shields.io/hexpm/v/espresso_templatizer)](https://hex.pm/packages/espresso_templatizer) [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/espresso_templatizer/)",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "node ./build.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.18.10",
+    "toml": "^3.0.0"
+  }
+}
