@@ -94,7 +94,7 @@ pub fn children() {
   loop(
     [],
     fn(children) {
-      nibble.one_of([
+      one_of([
         string("</")
         |> nibble.replace(list.reverse(children))
         |> nibble.map(nibble.Break)
@@ -132,6 +132,22 @@ pub fn text() -> nibble.Parser(Element, a) {
 
 pub fn document() -> nibble.Parser(Element, a) {
   one_of([import_block(), comment(), element(), text()])
+}
+
+pub fn documents() -> nibble.Parser(List(Element), a) {
+  loop(
+    [],
+    fn(documents) {
+      one_of([
+        eof()
+        |> nibble.replace(list.reverse(documents))
+        |> nibble.map(nibble.Break),
+        one_of([import_block(), comment(), element(), text()])
+        |> nibble.map(fn(el) { { nibble.Continue([el, ..documents]) } })
+        |> drop(whitespace()),
+      ])
+    },
+  )
 }
 
 pub fn main() {

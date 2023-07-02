@@ -2,7 +2,7 @@ import gleeunit
 import gleeunit/should
 import espresso_templatizer.{
   Attribute, Comment, Element, Import, Text, attribute, attributes, comment,
-  document, element, text,
+  document, documents, element, text,
 }
 import nibble.{run}
 import gleam/io
@@ -72,33 +72,40 @@ pub fn document_element_no_attributes_test() {
 pub fn document_element_nested_test() {
   let result =
     run(
-      "<div>
+      "
+      <div>Top level thing here</div>
+      
+      <div>
       <%^ import gleam/list ^%>
       <%% Commented thing %%>
     <p>Things go <b>here</b> but not
     over here</p>
   </div>",
-      document(),
+      documents(),
     )
 
   should.equal(
     result,
-    Ok(Element(
-      "div",
-      [],
-      [
-        Import("import gleam/list"),
-        Comment("Commented thing"),
-        Element(
-          "p",
-          [],
-          [
-            Text("Things go "),
-            Element("b", [], [Text("here")]),
-            Text("but not\n    over here"),
-          ],
-        ),
-      ],
-    )),
+    Ok([
+      Text(""),
+      Element("div", [], [Text("Top level thing here")]),
+      Element(
+        "div",
+        [],
+        [
+          Import("import gleam/list"),
+          Comment("Commented thing"),
+          Element(
+            "p",
+            [],
+            [
+              Text("Things go "),
+              Element("b", [], [Text("here")]),
+              Text("but not\n    over here"),
+            ],
+          ),
+        ],
+      ),
+    ]),
   )
 }
