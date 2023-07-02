@@ -73,6 +73,7 @@ pub fn document_element_nested_test() {
   let result =
     run(
       "<div>
+      <%^ import gleam/list ^%>
       <%% Commented thing %%>
     <p>Things go <b>here</b> but not
     over here</p>

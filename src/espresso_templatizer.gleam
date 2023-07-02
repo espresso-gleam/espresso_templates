@@ -21,6 +21,7 @@ pub type Element {
   Text(String)
   Element(tag_name: String, attributes: Attributes, children: Children)
   Comment(String)
+  Import(String)
 }
 
 pub fn comment() {
@@ -37,6 +38,22 @@ pub fn comment() {
     }),
   )
   |> drop(string("%%>"))
+}
+
+pub fn import_block() {
+  succeed(Import)
+  |> drop(whitespace())
+  |> drop(string("<%^"))
+  |> drop(whitespace())
+  |> keep(
+    take_while(fn(c) { c != "^" })
+    |> then(fn(comment) {
+      comment
+      |> string.trim()
+      |> commit()
+    }),
+  )
+  |> drop(string("^%>"))
 }
 
 /// Parses a list of attributes
@@ -114,7 +131,7 @@ pub fn text() -> nibble.Parser(Element, a) {
 }
 
 pub fn document() -> nibble.Parser(Element, a) {
-  one_of([comment(), element(), text()])
+  one_of([import_block(), comment(), element(), text()])
 }
 
 pub fn main() {
