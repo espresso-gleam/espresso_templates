@@ -1,7 +1,7 @@
 import gleam/function.{curry2, curry3}
 import nibble.{
-  commit, drop, eof, keep, loop, one_of, string, succeed, take_until, take_while,
-  then, whitespace,
+  backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
+  take_until, take_while, then, whitespace,
 }
 import gleam/list
 import gleam/io
@@ -18,7 +18,7 @@ type Children =
   List(Element)
 
 pub type Element {
-  Preamble
+  DocTypeDeclaration
   Text(String)
   Element(tag_name: String, attributes: Attributes, children: Children)
   Comment(String)
@@ -74,8 +74,8 @@ pub fn import_block() {
   |> drop(string("^%>"))
 }
 
-pub fn preamble() {
-  succeed(Preamble)
+pub fn doc_type_declaration() {
+  succeed(DocTypeDeclaration)
   |> drop(whitespace())
   |> drop(string("<!DOCTYPE html>"))
   |> drop(whitespace())
@@ -87,14 +87,8 @@ pub fn attributes() {
   loop(
     [],
     fn(attrs) {
-      nibble.one_of([
-        string("/>")
-        |> nibble.replace(list.reverse(attrs))
-        |> nibble.map(nibble.Break),
-        string(">")
-        |> nibble.replace(list.reverse(attrs))
-        |> nibble.map(nibble.Break),
-        eof()
+      one_of([
+        one_of([string("/"), string(">"), eof()])
         |> nibble.replace(list.reverse(attrs))
         |> nibble.map(nibble.Break),
         nibble.map(
@@ -118,19 +112,74 @@ pub fn attribute() -> nibble.Parser(Attribute, a) {
   |> drop(whitespace())
 }
 
+fn trailing_tag(
+  children: Children,
+) -> nibble.Parser(nibble.Loop(List(Element), a), b) {
+  string("</")
+  |> nibble.replace(list.reverse(children))
+  |> nibble.map(nibble.Break)
+  |> drop(take_while(fn(c) { c != ">" }))
+  |> drop(string(">"))
+  |> drop(whitespace())
+}
+
+/// void_element parses elements that have no children
+/// 
+/// https://developer.mozilla.org/en-US/docs/Glossary/Void_element
+pub fn void_element() {
+  backtrackable(
+    succeed(curry3(Element))
+    // Tag name
+    |> drop(whitespace())
+    |> drop(string("<"))
+    |> keep(one_of(void_elements()))
+    |> drop(whitespace())
+    // Attributes
+    |> keep(attributes())
+    |> drop(whitespace())
+    |> drop(one_of([
+      string("/>")
+      |> drop(whitespace()),
+      string(">")
+      |> drop(whitespace()),
+      whitespace(),
+    ]))
+    |> keep(commit([]))
+    |> drop(whitespace()),
+  )
+}
+
+pub fn void_elements() {
+  [
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+    "param", "source", "track", "wbr",
+  ]
+  |> list.map(fn(el: String) -> nibble.Parser(String, a) {
+    string(el)
+    |> nibble.map(fn(_) { el })
+  })
+}
+
+pub fn element() {
+  succeed(curry3(Element))
+  // Tag name
+  |> drop(whitespace())
+  |> drop(string("<"))
+  |> keep(take_until(fn(c) { c == " " || c == "/" || c == ">" }))
+  |> drop(whitespace())
+  // Attributes
+  |> keep(attributes())
+  |> drop(whitespace())
+  |> keep(children())
+  |> drop(whitespace())
+}
+
 pub fn children() {
   loop(
     [],
     fn(children) {
       one_of([
-        string("/>")
-        |> nibble.replace(list.reverse(children))
-        |> nibble.map(nibble.Break),
-        string("</")
-        |> nibble.replace(list.reverse(children))
-        |> nibble.map(nibble.Break)
-        |> drop(take_while(fn(c) { c != ">" }))
-        |> drop(string(">")),
+        trailing_tag(children),
         eof()
         |> nibble.replace(list.reverse(children))
         |> nibble.map(nibble.Break),
@@ -142,19 +191,6 @@ pub fn children() {
   )
 }
 
-pub fn element() {
-  succeed(curry3(Element))
-  // Tag name
-  |> drop(whitespace())
-  |> drop(string("<"))
-  |> keep(take_until(fn(c) { c == " " || c == ">" }))
-  |> drop(whitespace())
-  // Attributes
-  |> keep(attributes())
-  |> drop(whitespace())
-  |> keep(one_of([nibble.replace(string("/>"), []), children()]))
-}
-
 pub fn text() -> nibble.Parser(Element, a) {
   succeed(Text)
   |> drop(whitespace())
@@ -164,10 +200,12 @@ pub fn text() -> nibble.Parser(Element, a) {
 
 pub fn document() -> nibble.Parser(Element, a) {
   one_of([
-    preamble(),
+    doc_type_declaration(),
     import_block(),
     comment(),
     html_comment(),
+    // Void is backtrackable, if it fails it will rollback and try element
+    void_element(),
     element(),
     text(),
   ])
