@@ -88,6 +88,9 @@ pub fn attributes() {
     [],
     fn(attrs) {
       nibble.one_of([
+        string("/>")
+        |> nibble.replace(list.reverse(attrs))
+        |> nibble.map(nibble.Break),
         string(">")
         |> nibble.replace(list.reverse(attrs))
         |> nibble.map(nibble.Break),
@@ -120,6 +123,9 @@ pub fn children() {
     [],
     fn(children) {
       one_of([
+        string("/>")
+        |> nibble.replace(list.reverse(children))
+        |> nibble.map(nibble.Break),
         string("</")
         |> nibble.replace(list.reverse(children))
         |> nibble.map(nibble.Break)
@@ -146,7 +152,7 @@ pub fn element() {
   // Attributes
   |> keep(attributes())
   |> drop(whitespace())
-  |> keep(children())
+  |> keep(one_of([nibble.replace(string("/>"), []), children()]))
 }
 
 pub fn text() -> nibble.Parser(Element, a) {
@@ -183,6 +189,31 @@ pub fn documents() -> nibble.Parser(List(Element), a) {
   )
 }
 
+pub fn element_to_function_body(element: Element) -> String {
+  case element {
+    Text(text) -> "txt(\"" <> text <> "\")"
+    Comment(text) -> "// " <> text
+    Element(tag_name, attributes, children) -> {
+      let tag = "t(\"" <> tag_name <> "\")"
+
+      let attrs =
+        list.map(
+          attributes,
+          fn(attr) {
+            " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")"
+          },
+        )
+        |> string.join("")
+
+      let children =
+        list.map(children, element_to_function_body)
+        |> string.join(", ")
+      tag <> attrs <> "|> c([" <> children <> "])"
+    }
+    _ -> ""
+  }
+}
+
 pub external fn stdin() -> String =
   "./os.js" "stdin"
 
@@ -191,12 +222,14 @@ pub fn main() {
   let result = nibble.run(input, documents())
   case result {
     Ok(documents) -> {
-      io.debug(documents)
-      ""
+      documents
+      |> list.map(element_to_function_body)
+      |> string.join("\n")
+      |> io.println()
     }
     Error(error) -> {
       io.debug(error)
-      ""
+      io.println("")
     }
   }
 }
