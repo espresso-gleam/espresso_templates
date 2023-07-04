@@ -4,23 +4,26 @@ import gleam/javascript/array
 import gleam/string
 import glint.{CommandInput}
 import glint/flag
-import system.{args, base_name, read_file, write_file}
+import system.{args, base_name, dirname, read_file, write_file}
 import writer
 
 fn watch(input: CommandInput) {
   let assert Ok(flag.S(dir)) = flag.get(from: input.flags, for: "dir")
-  dir
-  |> io.println()
+  system.watch(dir, convert_file)
 }
 
 fn convert_file(path: String) -> Result(Nil, String) {
   let contents = read_file(path)
   case writer.to_gleam(contents) {
     Ok(parsed) -> {
-      write_file(base_name(path) <> ".gleam", parsed)
+      let filename = dirname(path) <> "/" <> base_name(path) <> ".gleam"
+      write_file(filename, parsed)
       Ok(Nil)
     }
-    _ -> Error("Failed to parse file")
+    e -> {
+      io.debug(e)
+      Error("Failed to parse file")
+    }
   }
 }
 

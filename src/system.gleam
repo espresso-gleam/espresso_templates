@@ -15,5 +15,14 @@ pub external fn read_file(path: String) -> String =
 pub external fn base_name(path: String) -> String =
   "./native.js" "base_name"
 
+pub external fn dirname(path: String) -> String =
+  "./native.js" "dirname"
+
 pub external fn write_file(path: String, contents: String) -> Nil =
   "./native.js" "write_file"
+
+pub external fn watch(
+  path: String,
+  callback: fn(String) -> Result(Nil, String),
+) -> Nil =
+  "./native.js" "watch"

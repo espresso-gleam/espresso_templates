@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const chokidar = require("chokidar");
 const { spawnSync } = require("child_process");
 
 exports.stdin = function () {
@@ -30,4 +31,14 @@ exports.write_file = function (path, contents) {
 
 exports.base_name = function (filePath) {
   return path.basename(filePath, path.extname(filePath));
+};
+
+exports.dirname = function (filePath) {
+  return path.dirname(filePath);
+};
+
+exports.watch = function (glob, callback) {
+  chokidar.watch(glob).on("change", (file) => {
+    callback(path.resolve(file));
+  });
 };

@@ -1,0 +1,18 @@
+<%^ import gleam/list ^%> 
+
+<%^ 
+pub type Params { Params(items: List(String)) }
+^%>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test</title>
+  </head>
+  <body>
+    <h1>Test</h1>
+    <% list.map(params.items, fn(item) { %>
+    <p><% item %></p>
+    <% }) %>
+  </body>
+</html>

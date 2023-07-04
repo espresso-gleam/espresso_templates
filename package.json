@@ -16,5 +16,8 @@
   "devDependencies": {
     "esbuild": "^0.18.10",
     "toml": "^3.0.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3"
   }
 }
