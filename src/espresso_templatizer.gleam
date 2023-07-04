@@ -6,6 +6,7 @@ import nibble.{
 import gleam/list
 import gleam/io
 import gleam/string
+import gleam/string_builder.{StringBuilder}
 
 pub type Attribute {
   Attribute(name: String, value: String)
@@ -245,29 +246,57 @@ pub fn documents() -> nibble.Parser(List(Element), a) {
   )
 }
 
-pub fn element_to_function_body(element: Element) -> String {
+pub fn element_to_function_body(
+  document: StringBuilder,
+  element: Element,
+) -> StringBuilder {
   case element {
-    Text(text) -> "txt(\"" <> text <> "\")"
-    Comment(text) -> "// " <> text
-    Block(block) -> block
+    Text(text) -> string_builder.append(document, "txt(\"" <> text <> "\")")
+    Comment(text) -> string_builder.append(document, "// " <> text)
+    Block(block) -> string_builder.append(document, block)
     Element(tag_name, attributes, children) -> {
-      let tag = "t(\"" <> tag_name <> "\")"
+      let document =
+        string_builder.append(document, "t(\"" <> tag_name <> "\")")
 
-      let attrs =
-        list.map(
+      let document =
+        list.fold(
           attributes,
-          fn(attr) {
-            " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")"
+          document,
+          fn(document, attr) {
+            string_builder.append(
+              document,
+              " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")",
+            )
           },
         )
-        |> string.join("")
 
-      let children =
-        list.map(children, element_to_function_body)
-        |> string.join(", ")
-      tag <> attrs <> "|> c([" <> children <> "])"
+      case children {
+        [] -> document
+        children -> {
+          let document = string_builder.append(document, " |> c([")
+          list.fold(
+            children,
+            document,
+            fn(document, child) {
+              case child {
+                Block(_) -> element_to_function_body(document, child)
+                Element(_, _, []) -> element_to_function_body(document, child)
+                Element(_, _, [Block(_)]) ->
+                  element_to_function_body(document, child)
+                _ -> {
+                  document
+                  |> element_to_function_body(child)
+                  |> string_builder.append(", ")
+                }
+              }
+            },
+          )
+          |> string_builder.append("])")
+        }
+      }
     }
-    _ -> ""
+
+    _ -> document
   }
 }
 
@@ -293,19 +322,17 @@ pub fn main() {
   let result = nibble.run(input, documents())
   case result {
     Ok(documents) -> {
-      let imports =
-        "import espresso/html.{t,c,a,txt}\n" <> gather_imports(documents, "")
+      let fun =
+        string_builder.new()
+        |> string_builder.append("import espresso/html.{t,c,a,txt}\n")
+        |> string_builder.append(gather_imports(documents, ""))
+        |> string_builder.append("pub fn render(params: Params) {\n")
 
-      let function_body =
-        documents
-        |> list.map(element_to_function_body)
-        |> string.join("")
-
-      let block =
-        imports <> "pub fn render(params: Params) {\n" <> function_body <> "\n}"
-
-      block
-      |> format
+      documents
+      |> list.fold(fun, element_to_function_body)
+      |> string_builder.append("\n}")
+      |> string_builder.to_string()
+      |> format()
       |> io.println()
     }
 
