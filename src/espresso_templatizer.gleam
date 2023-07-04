@@ -317,8 +317,7 @@ pub external fn stdin() -> String =
 pub external fn format(code: String) -> String =
   "./os.js" "format"
 
-pub fn main() {
-  let input = stdin()
+pub fn to_gleam(input: String) {
   let result = nibble.run(input, documents())
   case result {
     Ok(documents) -> {
@@ -333,12 +332,15 @@ pub fn main() {
       |> string_builder.append("\n}")
       |> string_builder.to_string()
       |> format()
-      |> io.println()
     }
 
     Error(error) -> {
       io.debug(error)
-      io.println("")
+      ""
     }
   }
+}
+
+pub fn main() {
+  ""
 }
