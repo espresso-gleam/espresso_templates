@@ -1,8 +1,9 @@
 import gleeunit
 import gleeunit/should
 import espresso_templatizer.{
-  Attribute, Comment, DocTypeDeclaration, Element, Import, Text, attribute,
-  attributes, comment, document, documents, element, html_comment, text,
+  Attribute, Block, Comment, DocTypeDeclaration, Element, Import, Text,
+  attribute, attributes, comment, document, documents, element, html_comment,
+  quoted_block, text,
 }
 import nibble.{run}
 
@@ -208,5 +209,38 @@ pub fn document_header_test() {
         ],
       ),
     ]),
+  )
+}
+
+pub fn quoted_block_test() {
+  let result = run("<% list.map(items, fn(item) { %>", quoted_block())
+  should.equal(result, Ok(Block("list.map(items, fn(item) {")))
+}
+
+pub fn quoted_block_nested_test() {
+  let result =
+    run(
+      "
+  <body>
+    <h1>Test</h1>
+    <% list.map(items, fn(item) { %>
+      <p><% item %></p>
+    <% }) %>
+  </body>
+  ",
+      document(),
+    )
+  should.equal(
+    result,
+    Ok(Element(
+      "body",
+      [],
+      [
+        Element("h1", [], [Text("Test")]),
+        Block("list.map(items, fn(item) {"),
+        Element("p", [], [Block("item")]),
+        Block("})"),
+      ],
+    )),
   )
 }

@@ -23,6 +23,7 @@ pub type Element {
   Element(tag_name: String, attributes: Attributes, children: Children)
   Comment(String)
   Import(String)
+  Block(String)
 }
 
 pub fn comment() {
@@ -72,6 +73,22 @@ pub fn import_block() {
     }),
   )
   |> drop(string("^%>"))
+}
+
+pub fn quoted_block() {
+  succeed(Block)
+  |> drop(whitespace())
+  |> drop(string("<%"))
+  |> drop(whitespace())
+  |> keep(
+    take_while(fn(c) { c != "%" })
+    |> then(fn(block) {
+      block
+      |> string.trim()
+      |> commit()
+    }),
+  )
+  |> drop(string("%>"))
 }
 
 pub fn doc_type_declaration() {
@@ -204,6 +221,7 @@ pub fn document() -> nibble.Parser(Element, a) {
     import_block(),
     comment(),
     html_comment(),
+    quoted_block(),
     // Void is backtrackable, if it fails it will rollback and try element
     void_element(),
     element(),
@@ -231,6 +249,7 @@ pub fn element_to_function_body(element: Element) -> String {
   case element {
     Text(text) -> "txt(\"" <> text <> "\")"
     Comment(text) -> "// " <> text
+    Block(block) -> block
     Element(tag_name, attributes, children) -> {
       let tag = "t(\"" <> tag_name <> "\")"
 
@@ -252,19 +271,44 @@ pub fn element_to_function_body(element: Element) -> String {
   }
 }
 
+pub fn gather_imports(elements: List(Element), imports: String) -> String {
+  case elements {
+    [] -> imports
+    [Import(block), ..rest] -> {
+      let new_imports = imports <> block <> "\n"
+      gather_imports(rest, new_imports)
+    }
+    [_, ..rest] -> gather_imports(rest, imports)
+  }
+}
+
 pub external fn stdin() -> String =
   "./os.js" "stdin"
+
+pub external fn format(code: String) -> String =
+  "./os.js" "format"
 
 pub fn main() {
   let input = stdin()
   let result = nibble.run(input, documents())
   case result {
     Ok(documents) -> {
-      documents
-      |> list.map(element_to_function_body)
-      |> string.join("\n")
+      let imports =
+        "import espresso/html.{t,c,a,txt}\n" <> gather_imports(documents, "")
+
+      let function_body =
+        documents
+        |> list.map(element_to_function_body)
+        |> string.join("")
+
+      let block =
+        imports <> "pub fn render(params: Params) {\n" <> function_body <> "\n}"
+
+      block
+      |> format
       |> io.println()
     }
+
     Error(error) -> {
       io.debug(error)
       io.println("")
