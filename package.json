@@ -6,6 +6,9 @@
   "directories": {
     "test": "test"
   },
+  "bin": {
+    "espresso_templatizer": "src/cli.js"
+  },
   "scripts": {
     "build": "node ./build.mjs",
     "test": "gleam test",
