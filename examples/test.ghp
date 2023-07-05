@@ -8,8 +8,8 @@ pub type Params { Params(items: List(String)) }
   <head>
     <title>Espresso</title>
   </head>
-  <body>
-    <h1>This is a header</h1>
+  <body class="w-full h-full">
+    <h1 class="text-4xl">This is a header</h1>
     <% ..list.map(params.items, fn(item) { %>
     <p>Thing: <% txt(item) %></p>
     <% }) %>
