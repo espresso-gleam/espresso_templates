@@ -1,5 +1,4 @@
-<%^ import gleam/list ^%> 
-
+<%^ import gleam/list ^%>
 <%^ 
 pub type Params { Params(items: List(String)) }
 ^%>
@@ -7,12 +6,12 @@ pub type Params { Params(items: List(String)) }
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Test</title>
+    <title>Espresso</title>
   </head>
   <body>
-    <h1>Test</h1>
-    <% list.map(params.items, fn(item) { %>
-    <p><% item %></p>
+    <h1>This is a header</h1>
+    <% ..list.map(params.items, fn(item) { %>
+    <p>Thing: <% txt(item) %></p>
     <% }) %>
   </body>
 </html>

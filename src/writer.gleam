@@ -39,8 +39,19 @@ pub fn element_to_function_body(
               case child {
                 Block(_) -> element_to_function_body(document, child)
                 Element(_, _, []) -> element_to_function_body(document, child)
-                Element(_, _, [Block(_)]) ->
-                  element_to_function_body(document, child)
+                Element(_, _, children) -> {
+                  let last_child = list.last(children)
+                  case last_child {
+                    Ok(Block(_)) -> {
+                      element_to_function_body(document, child)
+                    }
+                    _ -> {
+                      document
+                      |> element_to_function_body(child)
+                      |> string_builder.append(", ")
+                    }
+                  }
+                }
                 _ -> {
                   document
                   |> element_to_function_body(child)
