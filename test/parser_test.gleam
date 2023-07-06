@@ -191,7 +191,7 @@ pub fn document_element_nested_test() {
             "p",
             [],
             [
-              Text("Things go "),
+              Text("Things go"),
               Element("b", [], [Text("here")]),
               Text("but not\n    over here"),
             ],
