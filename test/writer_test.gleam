@@ -22,3 +22,22 @@ pub fn nested_void_element_test() {
     ),
   )
 }
+
+pub fn block_loop_test() {
+  let result =
+    writer.to_gleam(
+      "<main>
+        <img src=\"https://placekitten.com/200/300\" alt=\"kitten\" />
+        <% ..list.map(items, fn(item) { %>
+          <p><% item %></p>
+        <% }) %>
+      </main>",
+    )
+
+  should.equal(
+    result,
+    Ok(
+      "t(\"main\") |> c([t(\"img\") |> a(\"src\", \"https://placekitten.com/200/300\") |> a(\"alt\", \"kitten\") |> c([]),..list.map(items, fn(item) {t(\"p\") |> c([item])})])",
+    ),
+  )
+}
