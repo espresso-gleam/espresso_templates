@@ -14,8 +14,10 @@ pub fn render(params: Params) {
       |> c([txt("Espresso")]),
     ]),
     t("body")
+    |> a("class", "w-full h-full")
     |> c([
       t("h1")
+      |> a("class", "text-4xl")
       |> c([txt("This is a header")]),
       ..list.map(
         params.items,
