@@ -3,13 +3,13 @@ import gleam/list
 import gleam/javascript/array
 import gleam/string
 import glint.{CommandInput}
-import glint/flag
 import system.{args, base_name, dirname, read_file, write_file}
 import writer
 
 fn watch(input: CommandInput) {
-  let assert Ok(flag.S(dir)) = flag.get(from: input.flags, for: "dir")
-  system.watch(dir, convert_file)
+  input.args
+  |> array.from_list()
+  |> system.watch(convert_file)
 }
 
 fn convert_file(path: String) -> Result(Nil, String) {
@@ -20,9 +20,9 @@ fn convert_file(path: String) -> Result(Nil, String) {
       write_file(filename, parsed)
       Ok(Nil)
     }
-    e -> {
-      io.debug(e)
-      Error("Failed to parse file")
+    Error(e) -> {
+      io.println(e)
+      Error(e)
     }
   }
 }
@@ -49,8 +49,8 @@ pub fn main() {
   |> glint.add_command(
     at: ["watch"],
     do: watch,
-    with: [flag.string("dir", "src", "the directory to watch, defaults to src")],
-    described: "Watches the given directory for *.ghp file changes",
+    with: [],
+    described: "Watches all files matching given pattern i.e. espresso_templatizer watch asrc/**/*.ghp",
   )
   |> glint.add_command(
     at: ["convert"],

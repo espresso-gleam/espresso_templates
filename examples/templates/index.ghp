@@ -1,0 +1,4 @@
+<main>
+  <img src="https://placekitten.com/200/300" alt="kitten" />
+  <div class="thing"></div>
+</main>

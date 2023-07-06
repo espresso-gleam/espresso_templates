@@ -132,6 +132,36 @@ pub fn nested_self_closing_element_test() {
   )
 }
 
+pub fn self_closing_siblings_test() {
+  let result =
+    run(
+      "<main>
+        <img src=\"https://placekitten.com/200/300\" alt=\"kitten\" />
+        <div class=\"thing\"></div>
+      </main>",
+      element(),
+    )
+
+  should.equal(
+    result,
+    Ok(Element(
+      "main",
+      [],
+      [
+        Element(
+          "img",
+          [
+            Attribute("src", "https://placekitten.com/200/300"),
+            Attribute("alt", "kitten"),
+          ],
+          [],
+        ),
+        Element("div", [Attribute("class", "thing")], []),
+      ],
+    )),
+  )
+}
+
 pub fn document_element_nested_test() {
   let result =
     run(

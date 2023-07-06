@@ -210,7 +210,14 @@ pub fn children() {
 pub fn text() -> nibble.Parser(Element, a) {
   succeed(Text)
   |> drop(whitespace())
-  |> keep(take_while(fn(c) { c != "<" }))
+  |> keep(
+    take_while(fn(c) { c != "<" })
+    |> then(fn(comment) {
+      comment
+      |> string.trim()
+      |> commit()
+    }),
+  )
   |> drop(whitespace())
 }
 

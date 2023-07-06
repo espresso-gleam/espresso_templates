@@ -136,4 +136,4 @@ espresso.start(router)
 
 `npm install` to install dependencies
 `gleam run --target=javascript <commands>` to run the CLI
-`gleam test` to run tests
+`gleam test --target=javascript` to run tests

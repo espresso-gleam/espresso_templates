@@ -14,59 +14,52 @@ pub fn element_to_function_body(
     Block(block) -> string_builder.append(document, block)
     Element(tag_name, attributes, children) -> {
       let document =
-        string_builder.append(document, "t(\"" <> tag_name <> "\")")
+        document
+        |> render_tag(tag_name)
+        |> render_attributes(attributes)
+        |> string_builder.append(" |> c([")
 
-      let document =
-        list.fold(
-          attributes,
-          document,
-          fn(document, attr) {
-            string_builder.append(
-              document,
-              " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")",
-            )
+      let children =
+        list.map(
+          children,
+          fn(child) {
+            case child {
+              Block(_) -> element_to_function_body(string_builder.new(), child)
+              _ ->
+                element_to_function_body(string_builder.new(), child)
+                |> string_builder.append(",")
+            }
           },
         )
+        |> string_builder.join("")
 
-      case children {
-        [] -> document
-        children -> {
-          let document = string_builder.append(document, " |> c([")
-          list.fold(
-            children,
-            document,
-            fn(document, child) {
-              case child {
-                Block(_) -> element_to_function_body(document, child)
-                Element(_, _, []) -> element_to_function_body(document, child)
-                Element(_, _, children) -> {
-                  let last_child = list.last(children)
-                  case last_child {
-                    Ok(Block(_)) -> {
-                      element_to_function_body(document, child)
-                    }
-                    _ -> {
-                      document
-                      |> element_to_function_body(child)
-                      |> string_builder.append(", ")
-                    }
-                  }
-                }
-                _ -> {
-                  document
-                  |> element_to_function_body(child)
-                  |> string_builder.append(", ")
-                }
-              }
-            },
-          )
-          |> string_builder.append("])")
-        }
-      }
+      document
+      |> string_builder.append_builder(children)
+      |> string_builder.append("])")
     }
 
     _ -> document
   }
+}
+
+fn render_tag(document: StringBuilder, tag_name: String) -> StringBuilder {
+  string_builder.append(document, "t(\"" <> tag_name <> "\")")
+}
+
+fn render_attributes(
+  document: StringBuilder,
+  attributes: List(parser.Attribute),
+) -> StringBuilder {
+  list.fold(
+    attributes,
+    document,
+    fn(document, attr) {
+      string_builder.append(
+        document,
+        " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")",
+      )
+    },
+  )
 }
 
 pub fn gather_imports(elements: List(Element), imports: String) -> String {
@@ -90,17 +83,15 @@ pub fn to_gleam(input: String) -> Result(String, String) {
         |> string_builder.append(gather_imports(documents, ""))
         |> string_builder.append("pub fn render(params: Params) {\n")
 
-      let out =
-        documents
-        |> list.fold(fun, element_to_function_body)
-        |> string_builder.append("\n}")
-        |> string_builder.to_string()
-        |> format()
-      Ok(out)
+      documents
+      |> list.fold(fun, element_to_function_body)
+      |> string_builder.append("\n}")
+      |> string_builder.to_string()
+      |> format()
     }
 
-    Error(error) -> {
-      io.debug(error)
+    Error(e) -> {
+      io.debug(e)
       Error("Could not parse input to gleam")
     }
   }
