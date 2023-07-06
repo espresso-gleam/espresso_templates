@@ -16,6 +16,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
+      - uses: erlef/setup-beam@v1.15.4
+        with:
+          otp-version: "25.2"
+          gleam-version: "0.29.0"
+          rebar3-version: "3"
+          # elixir-version: "1.14.2"
+            - uses: actions/checkout@v3.5.1
       - run: gleam format --check src test
       - run: gleam deps download
       - run: gleam test --target=javascript
