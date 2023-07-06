@@ -13,7 +13,7 @@ pub type Attribute {
 pub type Attributes =
   List(Attribute)
 
-type Children =
+pub type Children =
   List(Element)
 
 pub type Element {

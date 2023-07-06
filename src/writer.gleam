@@ -1,7 +1,8 @@
 import gleam/list
 import gleam/io
+import gleam/string
 import gleam/string_builder.{StringBuilder}
-import parser.{Block, Comment, Element, Import, Text}
+import parser.{Block, Children, Comment, Element, Import, Text}
 import system.{format}
 
 pub fn element_to_function_body(
@@ -9,36 +10,58 @@ pub fn element_to_function_body(
   element: Element,
 ) -> StringBuilder {
   case element {
-    Text(text) -> string_builder.append(document, "txt(\"" <> text <> "\")")
-    Comment(text) -> string_builder.append(document, "// " <> text)
     Block(block) -> string_builder.append(document, block)
+    Comment(text) -> string_builder.append(document, "// " <> text)
     Element(tag_name, attributes, children) -> {
-      let document =
-        document
-        |> render_tag(tag_name)
-        |> render_attributes(attributes)
-        |> string_builder.append(" |> c([")
+      document
+      |> render_tag(tag_name)
+      |> render_attributes(attributes)
+      |> render_children(children)
+    }
+    Text(text) -> string_builder.append(document, "txt(\"" <> text <> "\")")
 
-      let children =
+    _ -> document
+  }
+}
+
+fn render_children(document: StringBuilder, children: Children) -> StringBuilder {
+  case children {
+    [] -> string_builder.append(document, " |> c([])")
+    children -> {
+      let document = string_builder.append(document, " |> c([")
+
+      let rendered_children =
         list.map(
           children,
           fn(child) {
             case child {
-              Block(_) -> element_to_function_body(string_builder.new(), child)
-              _ ->
-                element_to_function_body(string_builder.new(), child)
-                |> string_builder.append(",")
+              // When Blocks end with a '{' then we do not add a ','
+              Block(block) ->
+                case string.ends_with(block, "{") {
+                  True ->
+                    string_builder.new()
+                    |> element_to_function_body(child)
+                  False ->
+                    string_builder.new()
+                    |> element_to_function_body(child)
+                    |> string_builder.append(", ")
+                }
+
+              _ -> {
+                io.debug(child)
+                string_builder.new()
+                |> element_to_function_body(child)
+                |> string_builder.append(", ")
+              }
             }
           },
         )
         |> string_builder.join("")
 
       document
-      |> string_builder.append_builder(children)
+      |> string_builder.append_builder(rendered_children)
       |> string_builder.append("])")
     }
-
-    _ -> document
   }
 }
 
@@ -83,6 +106,7 @@ pub fn to_gleam(input: String) -> Result(String, String) {
         |> string_builder.append(gather_imports(documents, ""))
         |> string_builder.append("pub fn render(params: Params) {\n")
 
+      io.debug(documents)
       documents
       |> list.fold(fun, element_to_function_body)
       |> string_builder.append("\n}")
@@ -95,4 +119,48 @@ pub fn to_gleam(input: String) -> Result(String, String) {
       Error("Could not parse input to gleam")
     }
   }
+}
+
+pub fn sad() {
+  [
+    Element(
+      tag_name: "main",
+      attributes: [],
+      children: [
+        Element(
+          tag_name: "img",
+          attributes: [
+            Attribute(name: "src", value: "https://placekitten.com/200/300"),
+            Attribute(name: "alt", value: "kitten"),
+          ],
+          children: [],
+        ),
+        Element(
+          tag_name: "body",
+          attributes: [Attribute(name: "class", value: "w-full h-full")],
+          children: [
+            Element(
+              tag_name: "h1",
+              attributes: [Attribute(name: "class", value: "text-4xl")],
+              children: [Text("This is a header")],
+            ),
+            Element(
+              tag_name: "div",
+              attributes: [],
+              children: [
+                Block("list.map(params.items, fn(item) {"),
+                Element(
+                  tag_name: "p",
+                  attributes: [],
+                  children: [Text("Thing:"), Block("txt(item)")],
+                ),
+                Block("})"),
+              ],
+            ),
+            Element(tag_name: "div", attributes: [], children: [Text("SAD")]),
+          ],
+        ),
+      ],
+    ),
+  ]
 }
