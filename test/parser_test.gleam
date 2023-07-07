@@ -28,6 +28,25 @@ pub fn attributes_parser_test() {
   )
 }
 
+pub fn mixed_attributes_parser_test() {
+  let result =
+    run(
+      "selected data-test-id=\"12\" checked id=\"4\" class=\"text-white flex\"",
+      attributes(),
+    )
+
+  should.equal(
+    result,
+    Ok([
+      Attribute(name: "selected", value: ""),
+      Attribute(name: "data-test-id", value: "12"),
+      Attribute(name: "checked", value: ""),
+      Attribute(name: "id", value: "4"),
+      Attribute(name: "class", value: "text-white flex"),
+    ]),
+  )
+}
+
 // COMMENTS
 
 pub fn comment_parser_test() {

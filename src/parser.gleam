@@ -162,13 +162,24 @@ pub fn attributes() {
 /// Parses html attributes
 /// class="stuff" -> Attribute("class", "stuff")
 pub fn attribute() -> nibble.Parser(Attribute, a) {
-  succeed(curry2(Attribute))
-  |> drop(whitespace())
-  |> keep(take_while(fn(c) { c != "=" }))
-  |> drop(string("=\""))
-  |> keep(take_while(fn(c) { c != "\"" }))
-  |> drop(string("\""))
-  |> drop(whitespace())
+  one_of([
+    // Attributes with a name and value 
+    // i.e. id="thing" class="stuff"
+    succeed(curry2(Attribute))
+    |> drop(whitespace())
+    |> keep(take_while(fn(c) { c != "=" && c != " " }))
+    |> drop(string("=\""))
+    |> keep(take_while(fn(c) { c != "\"" }))
+    |> drop(string("\""))
+    |> drop(whitespace()),
+    // Attributes without a value
+    // i.e. "selected" "checked"
+    succeed(curry2(Attribute))
+    |> drop(whitespace())
+    |> keep(take_while(fn(c) { c != " " && c != "=" }))
+    |> keep(commit(""))
+    |> drop(whitespace()),
+  ])
 }
 
 fn trailing_tag(
