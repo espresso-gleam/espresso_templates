@@ -1,6 +1,6 @@
 {
   "name": "espresso_templatizer",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "[![Package Version](https://img.shields.io/hexpm/v/espresso_templatizer)](https://hex.pm/packages/espresso_templatizer) [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/espresso_templatizer/)",
   "main": "build/main.js",
   "directories": {
