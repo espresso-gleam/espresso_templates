@@ -18,7 +18,8 @@ pub fn render(params: Params) {
         list.map(
           params.items,
           fn(item) {
-            t("p")
+            "p"
+            t()
             |> c([txt("Thing:"), txt(item)])
           },
         ),
