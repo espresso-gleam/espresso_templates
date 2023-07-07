@@ -13,7 +13,7 @@ pub type Attribute {
 pub type Attributes =
   List(Attribute)
 
-type Children =
+pub type Children =
   List(Element)
 
 pub type Element {
@@ -23,6 +23,8 @@ pub type Element {
   Comment(String)
   Import(String)
   Block(String)
+  OpeningScope(header: String, children: Children)
+  ClosingScope(String)
 }
 
 pub fn comment() {
@@ -75,19 +77,60 @@ pub fn import_block() {
 }
 
 pub fn quoted_block() {
-  succeed(Block)
-  |> drop(whitespace())
-  |> drop(string("<%"))
-  |> drop(whitespace())
-  |> keep(
-    take_while(fn(c) { c != "%" })
-    |> then(fn(block) {
-      block
-      |> string.trim()
-      |> commit()
-    }),
+  backtrackable(
+    succeed(Block)
+    |> drop(whitespace())
+    |> drop(string("<%"))
+    |> drop(whitespace())
+    |> keep(
+      take_while(fn(c) { c != "%" })
+      |> then(fn(block) {
+        block
+        |> string.trim()
+        |> commit()
+      }),
+    )
+    |> drop(string("%>")),
   )
-  |> drop(string("%>"))
+}
+
+pub fn opening_scope() {
+  backtrackable(
+    succeed(curry2(OpeningScope))
+    |> drop(whitespace())
+    |> drop(string("<%"))
+    |> drop(whitespace())
+    |> keep(
+      take_while(fn(c) { c != "{" })
+      |> then(fn(block) { commit(block <> "{") }),
+    )
+    |> drop(string("{"))
+    |> drop(whitespace())
+    |> drop(string("%>"))
+    |> drop(whitespace())
+    |> keep(children())
+    |> drop(whitespace()),
+  )
+}
+
+pub fn closing_scope() {
+  backtrackable(
+    succeed(ClosingScope)
+    |> drop(whitespace())
+    |> drop(string("<%"))
+    |> drop(whitespace())
+    |> keep(
+      take_while(fn(c) { c == "}" || c == ")" || c == " " })
+      |> then(fn(block) {
+        block
+        |> string.trim()
+        |> commit()
+      }),
+    )
+    |> drop(whitespace())
+    |> drop(string("%>"))
+    |> drop(whitespace()),
+  )
 }
 
 pub fn doc_type_declaration() {
@@ -227,6 +270,8 @@ pub fn document() -> nibble.Parser(Element, a) {
     import_block(),
     comment(),
     html_comment(),
+    opening_scope(),
+    closing_scope(),
     quoted_block(),
     // Void is backtrackable, if it fails it will rollback and try element
     void_element(),

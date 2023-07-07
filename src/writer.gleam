@@ -1,7 +1,9 @@
 import gleam/list
 import gleam/io
 import gleam/string_builder.{StringBuilder}
-import parser.{Block, Comment, Element, Import, Text}
+import parser.{
+  Block, Children, ClosingScope, Comment, Element, Import, OpeningScope, Text,
+}
 import system.{format}
 
 pub fn element_to_function_body(
@@ -9,36 +11,49 @@ pub fn element_to_function_body(
   element: Element,
 ) -> StringBuilder {
   case element {
-    Text(text) -> string_builder.append(document, "txt(\"" <> text <> "\")")
-    Comment(text) -> string_builder.append(document, "// " <> text)
+    OpeningScope(block, children) -> {
+      list.fold(
+        children,
+        string_builder.append(document, block),
+        element_to_function_body,
+      )
+    }
+    ClosingScope(block) -> string_builder.append(document, block)
     Block(block) -> string_builder.append(document, block)
+    Comment(text) -> string_builder.append(document, "// " <> text)
     Element(tag_name, attributes, children) -> {
-      let document =
-        document
-        |> render_tag(tag_name)
-        |> render_attributes(attributes)
-        |> string_builder.append(" |> c([")
+      document
+      |> render_tag(tag_name)
+      |> render_attributes(attributes)
+      |> render_children(children)
+    }
+    Text(text) -> string_builder.append(document, "txt(\"" <> text <> "\")")
 
-      let children =
+    _ -> document
+  }
+}
+
+fn render_children(document: StringBuilder, children: Children) -> StringBuilder {
+  case children {
+    [] -> string_builder.append(document, " |> c([])")
+    children -> {
+      let document = string_builder.append(document, " |> c([")
+
+      let rendered_children =
         list.map(
           children,
           fn(child) {
-            case child {
-              Block(_) -> element_to_function_body(string_builder.new(), child)
-              _ ->
-                element_to_function_body(string_builder.new(), child)
-                |> string_builder.append(",")
-            }
+            string_builder.new()
+            |> element_to_function_body(child)
+            |> string_builder.append(", ")
           },
         )
         |> string_builder.join("")
 
       document
-      |> string_builder.append_builder(children)
+      |> string_builder.append_builder(rendered_children)
       |> string_builder.append("])")
     }
-
-    _ -> document
   }
 }
 

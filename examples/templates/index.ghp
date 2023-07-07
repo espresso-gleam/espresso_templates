@@ -1,4 +1,12 @@
 <main>
   <img src="https://placekitten.com/200/300" alt="kitten" />
-  <div class="thing"></div>
+  <body class="w-full h-full">
+    <h1 class="text-4xl">This is a header</h1>
+    <div>
+      <% list.map(params.items, fn(item) { %>
+      <p>Thing: <% txt(item) %></p>
+      <% }) %>
+    </div>
+    <div>SAD</div>
+  </body>
 </main>
