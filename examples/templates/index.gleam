@@ -13,13 +13,18 @@ pub fn render(params: Params) {
       t("h1")
       |> a("class", "text-4xl")
       |> c([txt("This is a header")]),
-      ..list.map(
-        params.items,
-        fn(item) {
-          t("p")
-          |> c([txt("Thing:"), txt(item)])
-        },
-      )
+      t("div")
+      |> c([
+        list.map(
+          params.items,
+          fn(item) {
+            t("p")
+            |> c([txt("Thing:"), txt(item)])
+          },
+        ),
+        t("div")
+        |> c([txt("SAD")]),
+      ]),
     ]),
   ])
 }

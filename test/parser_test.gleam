@@ -1,9 +1,9 @@
 import gleeunit
 import gleeunit/should
 import parser.{
-  Attribute, Block, Comment, DocTypeDeclaration, Element, Import, Text,
-  attribute, attributes, comment, document, documents, element, html_comment,
-  quoted_block, text,
+  Attribute, Block, ClosingScope, Comment, DocTypeDeclaration, Element, Import,
+  OpeningScope, Text, attribute, attributes, comment, document, documents,
+  element, html_comment, opening_scope, quoted_block, text,
 }
 import nibble.{run}
 
@@ -263,13 +263,44 @@ pub fn quoted_block_nested_test() {
   should.equal(
     result,
     Ok(Element(
-      "body",
-      [],
-      [
-        Element("h1", [], [Text("Test")]),
-        Block("list.map(items, fn(item) {"),
-        Element("p", [], [Block("item")]),
-        Block("})"),
+      tag_name: "body",
+      attributes: [],
+      children: [
+        Element(tag_name: "h1", attributes: [], children: [Text("Test")]),
+        OpeningScope(
+          header: "list.map(items, fn(item) {",
+          children: [
+            Element(tag_name: "p", attributes: [], children: [Block("item")]),
+            ClosingScope("})"),
+          ],
+        ),
+      ],
+    )),
+  )
+}
+
+pub fn scoped_block_parser_test() {
+  let result =
+    run(
+      "
+  <% list.map(params.items, fn(item) { %>
+    <p>Thing: <% txt(item) %></p>
+  <% }) %>
+  ",
+      opening_scope(),
+    )
+
+  should.equal(
+    result,
+    Ok(OpeningScope(
+      header: "list.map(params.items, fn(item) {",
+      children: [
+        Element(
+          tag_name: "p",
+          attributes: [],
+          children: [Text("Thing:"), Block("txt(item)")],
+        ),
+        ClosingScope("})"),
       ],
     )),
   )

@@ -1,8 +1,9 @@
 import gleam/list
 import gleam/io
-import gleam/string
 import gleam/string_builder.{StringBuilder}
-import parser.{Block, Children, Comment, Element, Import, Text}
+import parser.{
+  Block, Children, ClosingScope, Comment, Element, Import, OpeningScope, Text,
+}
 import system.{format}
 
 pub fn element_to_function_body(
@@ -10,6 +11,14 @@ pub fn element_to_function_body(
   element: Element,
 ) -> StringBuilder {
   case element {
+    OpeningScope(block, children) -> {
+      list.fold(
+        children,
+        string_builder.append(document, block),
+        element_to_function_body,
+      )
+    }
+    ClosingScope(block) -> string_builder.append(document, block)
     Block(block) -> string_builder.append(document, block)
     Comment(text) -> string_builder.append(document, "// " <> text)
     Element(tag_name, attributes, children) -> {
@@ -34,26 +43,9 @@ fn render_children(document: StringBuilder, children: Children) -> StringBuilder
         list.map(
           children,
           fn(child) {
-            case child {
-              // When Blocks end with a '{' then we do not add a ','
-              Block(block) ->
-                case string.ends_with(block, "{") {
-                  True ->
-                    string_builder.new()
-                    |> element_to_function_body(child)
-                  False ->
-                    string_builder.new()
-                    |> element_to_function_body(child)
-                    |> string_builder.append(", ")
-                }
-
-              _ -> {
-                io.debug(child)
-                string_builder.new()
-                |> element_to_function_body(child)
-                |> string_builder.append(", ")
-              }
-            }
+            string_builder.new()
+            |> element_to_function_body(child)
+            |> string_builder.append(", ")
           },
         )
         |> string_builder.join("")
@@ -106,7 +98,6 @@ pub fn to_gleam(input: String) -> Result(String, String) {
         |> string_builder.append(gather_imports(documents, ""))
         |> string_builder.append("pub fn render(params: Params) {\n")
 
-      io.debug(documents)
       documents
       |> list.fold(fun, element_to_function_body)
       |> string_builder.append("\n}")
@@ -119,48 +110,4 @@ pub fn to_gleam(input: String) -> Result(String, String) {
       Error("Could not parse input to gleam")
     }
   }
-}
-
-pub fn sad() {
-  [
-    Element(
-      tag_name: "main",
-      attributes: [],
-      children: [
-        Element(
-          tag_name: "img",
-          attributes: [
-            Attribute(name: "src", value: "https://placekitten.com/200/300"),
-            Attribute(name: "alt", value: "kitten"),
-          ],
-          children: [],
-        ),
-        Element(
-          tag_name: "body",
-          attributes: [Attribute(name: "class", value: "w-full h-full")],
-          children: [
-            Element(
-              tag_name: "h1",
-              attributes: [Attribute(name: "class", value: "text-4xl")],
-              children: [Text("This is a header")],
-            ),
-            Element(
-              tag_name: "div",
-              attributes: [],
-              children: [
-                Block("list.map(params.items, fn(item) {"),
-                Element(
-                  tag_name: "p",
-                  attributes: [],
-                  children: [Text("Thing:"), Block("txt(item)")],
-                ),
-                Block("})"),
-              ],
-            ),
-            Element(tag_name: "div", attributes: [], children: [Text("SAD")]),
-          ],
-        ),
-      ],
-    ),
-  ]
 }
