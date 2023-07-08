@@ -53,27 +53,35 @@ fn render_children(document: StringBuilder, children: Children) -> StringBuilder
       case list.first(children) {
         Ok(OpeningScope(_, scope_children)) -> {
           case list.last(scope_children) {
-            Ok(ClosingScope(_)) -> {
-              document
-              |> string_builder.append(" |> c(")
-              |> string_builder.append_builder(rendered_children)
-              |> string_builder.append(")")
-            }
-            _ ->
-              document
-              |> string_builder.append(" |> c([")
-              |> string_builder.append_builder(rendered_children)
-              |> string_builder.append("])")
+            Ok(ClosingScope(_)) ->
+              append_children(document, False, rendered_children)
+
+            _ -> append_children(document, True, rendered_children)
           }
         }
 
-        _ ->
-          document
-          |> string_builder.append(" |> c([")
-          |> string_builder.append_builder(rendered_children)
-          |> string_builder.append("])")
+        _ -> append_children(document, True, rendered_children)
       }
     }
+  }
+}
+
+fn append_children(
+  document: StringBuilder,
+  brackets: Bool,
+  rendered_children: StringBuilder,
+) -> StringBuilder {
+  case brackets {
+    True ->
+      document
+      |> string_builder.append(" |> c([")
+      |> string_builder.append_builder(rendered_children)
+      |> string_builder.append("])")
+    False ->
+      document
+      |> string_builder.append(" |> c(")
+      |> string_builder.append_builder(rendered_children)
+      |> string_builder.append(")")
   }
 }
 
