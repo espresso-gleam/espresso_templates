@@ -3,13 +3,25 @@ import gleam/list
 import gleam/javascript/array
 import gleam/string
 import glint.{CommandInput}
+import glint/flag
 import system.{args, base_name, dirname, read_file, write_file}
 import writer
 
 fn watch(input: CommandInput) {
-  input.args
-  |> array.from_list()
-  |> system.watch(convert_file)
+  case flag.get(input.flags, "files") {
+    Ok(flag.S("")) ->
+      ["**/*.ghp"]
+      |> array.from_list()
+      |> system.watch(convert_file)
+    Ok(flag.S(files)) ->
+      [files]
+      |> array.from_list()
+      |> system.watch(convert_file)
+    _ -> {
+      io.debug("Invalid watch usage")
+      Nil
+    }
+  }
 }
 
 fn convert_file(path: String) -> Result(Nil, String) {
@@ -49,8 +61,8 @@ pub fn main() {
   |> glint.add_command(
     at: ["watch"],
     do: watch,
-    with: [],
-    described: "Watches all files matching given pattern i.e. espresso_templatizer watch asrc/**/*.ghp",
+    with: [flag.string("files", "", "Pattern of files to watch i.e.")],
+    described: "Watches all files matching given pattern. If none are provided defaults to **/*.ghp. i.e. espresso_templatizer watch --files=\"asdf/**/*.ghp\"",
   )
   |> glint.add_command(
     at: ["convert"],
