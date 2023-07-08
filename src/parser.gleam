@@ -176,7 +176,7 @@ pub fn attribute() -> nibble.Parser(Attribute, a) {
     // i.e. "selected" "checked"
     succeed(curry2(Attribute))
     |> drop(whitespace())
-    |> keep(take_while(fn(c) { c != " " && c != "=" }))
+    |> keep(take_while(fn(c) { c != " " && c != "=" && c != ">" }))
     |> keep(commit(""))
     |> drop(whitespace()),
   ])

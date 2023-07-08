@@ -47,6 +47,19 @@ pub fn mixed_attributes_parser_test() {
   )
 }
 
+pub fn void_element_mixed_attributes_parser_test() {
+  let result = run("<input type=\"text\" required>", document())
+
+  should.equal(
+    result,
+    Ok(Element(
+      "input",
+      [Attribute("type", "text"), Attribute("required", "")],
+      [],
+    )),
+  )
+}
+
 // COMMENTS
 
 pub fn comment_parser_test() {
