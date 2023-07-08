@@ -37,8 +37,6 @@ fn render_children(document: StringBuilder, children: Children) -> StringBuilder
   case children {
     [] -> string_builder.append(document, " |> c([])")
     children -> {
-      let document = string_builder.append(document, " |> c([")
-
       let rendered_children =
         list.map(
           children,
@@ -50,10 +48,40 @@ fn render_children(document: StringBuilder, children: Children) -> StringBuilder
         )
         |> string_builder.join("")
 
+      // If the first and last child are an open and closing scope do not render the 
+      // wrapping [] because it errors the formatter, i.e. return this: "c(inner code here)"
+      case list.first(children) {
+        Ok(OpeningScope(_, scope_children)) -> {
+          case list.last(scope_children) {
+            Ok(ClosingScope(_)) ->
+              append_children(document, False, rendered_children)
+
+            _ -> append_children(document, True, rendered_children)
+          }
+        }
+
+        _ -> append_children(document, True, rendered_children)
+      }
+    }
+  }
+}
+
+fn append_children(
+  document: StringBuilder,
+  brackets: Bool,
+  rendered_children: StringBuilder,
+) -> StringBuilder {
+  case brackets {
+    True ->
       document
+      |> string_builder.append(" |> c([")
       |> string_builder.append_builder(rendered_children)
       |> string_builder.append("])")
-    }
+    False ->
+      document
+      |> string_builder.append(" |> c(")
+      |> string_builder.append_builder(rendered_children)
+      |> string_builder.append(")")
   }
 }
 
