@@ -9,9 +9,8 @@ pub type Params { Params(items: List(String)) }
     <title>Espresso</title>
   </head>
   <body class="w-full h-full">
-    <h1 class="text-4xl">This is a header</h1>
-    <% ..list.map(params.items, fn(item) { %>
-    <p>Thing: <% txt(item) %></p>
-    <% }) %>
+    <button type="button" hx-vals="<% "{id:" <> params.note.id <> "}" %>">
+      Delete
+    </button>
   </body>
 </html>

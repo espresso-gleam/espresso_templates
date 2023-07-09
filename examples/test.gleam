@@ -16,16 +16,10 @@ pub fn render(params: Params) {
     t("body")
     |> a("class", "w-full h-full")
     |> c([
-      t("h1")
-      |> a("class", "text-4xl")
-      |> c([txt("This is a header")]),
-      ..list.map(
-        params.items,
-        fn(item) {
-          t("p")
-          |> c([txt("Thing: "), txt(item)])
-        },
-      )
+      t("button")
+      |> a("type", "button")
+      |> a("hx-vals", "{id:" <> params.note.id <> "}")
+      |> c([txt("Delete")]),
     ]),
   ])
 }

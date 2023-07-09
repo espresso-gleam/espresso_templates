@@ -1,9 +1,9 @@
 import gleeunit
 import gleeunit/should
 import parser.{
-  Attribute, Block, ClosingScope, Comment, DocTypeDeclaration, Element, Import,
-  OpeningScope, Text, attribute, attributes, comment, document, documents,
-  element, html_comment, opening_scope, quoted_block, text,
+  Attr, Attribute, Block, BlockAttr, ClosingScope, Comment, DocTypeDeclaration,
+  Element, Import, OpeningScope, Text, attribute, attributes, comment, document,
+  documents, element, html_comment, opening_scope, quoted_block, text,
 }
 import nibble.{run}
 
@@ -16,7 +16,7 @@ pub fn main() {
 pub fn attribute_parser_test() {
   let result = run("id=\"4\"", attribute())
 
-  should.equal(result, Ok(Attribute(name: "id", value: "4")))
+  should.equal(result, Ok(Attribute(name: "id", value: Attr("4"))))
 }
 
 pub fn attributes_parser_test() {
@@ -24,7 +24,7 @@ pub fn attributes_parser_test() {
 
   should.equal(
     result,
-    Ok([Attribute("id", "4"), Attribute("class", "text-white flex")]),
+    Ok([Attribute("id", Attr("4")), Attribute("class", Attr("text-white flex"))]),
   )
 }
 
@@ -38,11 +38,11 @@ pub fn mixed_attributes_parser_test() {
   should.equal(
     result,
     Ok([
-      Attribute(name: "selected", value: ""),
-      Attribute(name: "data-test-id", value: "12"),
-      Attribute(name: "checked", value: ""),
-      Attribute(name: "id", value: "4"),
-      Attribute(name: "class", value: "text-white flex"),
+      Attribute(name: "selected", value: Attr("")),
+      Attribute(name: "data-test-id", value: Attr("12")),
+      Attribute(name: "checked", value: Attr("")),
+      Attribute(name: "id", value: Attr("4")),
+      Attribute(name: "class", value: Attr("text-white flex")),
     ]),
   )
 }
@@ -54,8 +54,33 @@ pub fn void_element_mixed_attributes_parser_test() {
     result,
     Ok(Element(
       "input",
-      [Attribute("type", "text"), Attribute("required", "")],
+      [Attribute("type", Attr("text")), Attribute("required", Attr(""))],
       [],
+    )),
+  )
+}
+
+pub fn block_attributes_parser_test() {
+  let result =
+    run(
+      "<button type=\"button\" hx-vals=\"<% {\"id\":\" <> params.note.id  <> \"} %>\">
+        Delete
+      </button>",
+      document(),
+    )
+
+  should.equal(
+    result,
+    Ok(Element(
+      tag_name: "button",
+      attributes: [
+        Attribute(name: "type", value: Attr("button")),
+        Attribute(
+          name: "hx-vals",
+          value: BlockAttr("{\"id\":\" <> params.note.id  <> \"} "),
+        ),
+      ],
+      children: [Text("Delete")],
     )),
   )
 }
@@ -124,8 +149,8 @@ pub fn self_closing_element_with_attrs_test() {
     Ok(Element(
       "link",
       [
-        Attribute("rel", "stylesheet"),
-        Attribute("href", "https://stuff.thing.app.css"),
+        Attribute("rel", Attr("stylesheet")),
+        Attribute("href", Attr("https://stuff.thing.app.css")),
       ],
       [],
     )),
@@ -149,16 +174,16 @@ pub fn nested_self_closing_element_test() {
       "head",
       [],
       [
-        Element("meta", [Attribute("lang", "en")], []),
+        Element("meta", [Attribute("lang", Attr("en"))], []),
         Element(
           "link",
           [
-            Attribute("rel", "stylesheet"),
-            Attribute("href", "https://stuff.thing/app.css"),
+            Attribute("rel", Attr("stylesheet")),
+            Attribute("href", Attr("https://stuff.thing/app.css")),
           ],
           [],
         ),
-        Element("script", [Attribute("src", "app.js")], []),
+        Element("script", [Attribute("src", Attr("app.js"))], []),
       ],
     )),
   )
@@ -183,12 +208,12 @@ pub fn self_closing_siblings_test() {
         Element(
           "img",
           [
-            Attribute("src", "https://placekitten.com/200/300"),
-            Attribute("alt", "kitten"),
+            Attribute("src", Attr("https://placekitten.com/200/300")),
+            Attribute("alt", Attr("kitten")),
           ],
           [],
         ),
-        Element("div", [Attribute("class", "thing")], []),
+        Element("div", [Attribute("class", Attr("thing"))], []),
       ],
     )),
   )
@@ -256,7 +281,7 @@ pub fn document_header_test() {
       DocTypeDeclaration,
       Element(
         "html",
-        [Attribute("lang", "en")],
+        [Attribute("lang", Attr("en"))],
         [
           Comment("This is the head"),
           Element("head", [], []),

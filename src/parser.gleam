@@ -6,8 +6,13 @@ import nibble.{
 import gleam/list
 import gleam/string
 
+pub type Attr {
+  Attr(String)
+  BlockAttr(String)
+}
+
 pub type Attribute {
-  Attribute(name: String, value: String)
+  Attribute(name: String, value: Attr)
 }
 
 pub type Attributes =
@@ -169,7 +174,7 @@ pub fn attribute() -> nibble.Parser(Attribute, a) {
     |> drop(whitespace())
     |> keep(take_while(fn(c) { c != "=" && c != " " }))
     |> drop(string("=\""))
-    |> keep(take_while(fn(c) { c != "\"" }))
+    |> keep(one_of([block_attribute(), attr_attribute()]))
     |> drop(string("\""))
     |> drop(whitespace()),
     // Attributes without a value
@@ -177,9 +182,26 @@ pub fn attribute() -> nibble.Parser(Attribute, a) {
     succeed(curry2(Attribute))
     |> drop(whitespace())
     |> keep(take_while(fn(c) { c != " " && c != "=" && c != ">" }))
-    |> keep(commit(""))
+    |> keep(commit(Attr("")))
     |> drop(whitespace()),
   ])
+}
+
+fn attr_attribute() {
+  succeed(Attr)
+  |> drop(whitespace())
+  |> keep(take_while(fn(c) { c != "\"" }))
+  |> drop(whitespace())
+}
+
+fn block_attribute() {
+  succeed(BlockAttr)
+  |> drop(whitespace())
+  |> drop(string("<%"))
+  |> drop(whitespace())
+  |> keep(take_while(fn(c) { c != "%" }))
+  |> drop(string("%>"))
+  |> drop(whitespace())
 }
 
 fn trailing_tag(

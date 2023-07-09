@@ -2,7 +2,8 @@ import gleam/list
 import gleam/io
 import gleam/string_builder.{StringBuilder}
 import parser.{
-  Block, Children, ClosingScope, Comment, Element, Import, OpeningScope, Text,
+  Attr, Block, BlockAttr, Children, ClosingScope, Comment, Element, Import,
+  OpeningScope, Text,
 }
 import system.{format}
 
@@ -97,9 +98,14 @@ fn render_attributes(
     attributes,
     document,
     fn(document, attr) {
+      let value = case attr.value {
+        Attr(a) -> "\"" <> a <> "\""
+        BlockAttr(block) -> block
+      }
+
       string_builder.append(
         document,
-        " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")",
+        " |> a(\"" <> attr.name <> "\", " <> value <> ")",
       )
     },
   )
