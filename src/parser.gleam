@@ -17,127 +17,34 @@ pub type Children =
   List(Element)
 
 pub type Element {
-  DocTypeDeclaration
   Text(String)
   Element(tag_name: String, attributes: Attributes, children: Children)
-  Comment(String)
-  Import(String)
-  Block(String)
-  OpeningScope(header: String, children: Children)
-  ClosingScope(String)
 }
 
-pub fn comment() {
-  succeed(Comment)
-  |> drop(whitespace())
-  |> drop(string("<%%"))
-  |> drop(whitespace())
-  |> keep(
-    take_while(fn(c) { c != "%" })
-    |> then(fn(comment) {
-      comment
-      |> string.trim()
-      |> commit()
-    }),
-  )
-  |> drop(string("%%>"))
+pub type Document =
+  List(Token)
+
+pub type Token {
+  GleamCode(String)
+  GHPElement
 }
 
-pub fn html_comment() {
-  succeed(Comment)
-  |> drop(whitespace())
-  |> drop(string("<!"))
-  |> drop(take_while(fn(c) { c == "-" }))
-  |> drop(whitespace())
-  |> keep(
-    take_while(fn(c) { c != "-" })
-    |> then(fn(comment) {
-      comment
-      |> string.trim()
-      |> commit()
-    }),
-  )
-  |> drop(string("-->"))
+pub fn code_parser() {
+  one_of([gleam_code(), ghp_element()])
 }
 
-pub fn import_block() {
-  succeed(Import)
+pub fn gleam_code() {
+  succeed(GleamCode)
   |> drop(whitespace())
-  |> drop(string("<%^"))
-  |> drop(whitespace())
-  |> keep(
-    take_while(fn(c) { c != "^" })
-    |> then(fn(comment) {
-      comment
-      |> string.trim()
-      |> commit()
-    }),
-  )
-  |> drop(string("^%>"))
+  |> drop(string(">->"))
 }
 
-pub fn quoted_block() {
-  backtrackable(
-    succeed(Block)
-    |> drop(whitespace())
-    |> drop(string("<%"))
-    |> drop(whitespace())
-    |> keep(
-      take_while(fn(c) { c != "%" })
-      |> then(fn(block) {
-        block
-        |> string.trim()
-        |> commit()
-      }),
-    )
-    |> drop(string("%>")),
-  )
-}
-
-pub fn opening_scope() {
-  backtrackable(
-    succeed(curry2(OpeningScope))
-    |> drop(whitespace())
-    |> drop(string("<%"))
-    |> drop(whitespace())
-    |> keep(
-      take_while(fn(c) { c != "{" })
-      |> then(fn(block) { commit(block <> "{") }),
-    )
-    |> drop(string("{"))
-    |> drop(whitespace())
-    |> drop(string("%>"))
-    |> drop(whitespace())
-    |> keep(children())
-    |> drop(whitespace()),
-  )
-}
-
-pub fn closing_scope() {
-  backtrackable(
-    succeed(ClosingScope)
-    |> drop(whitespace())
-    |> drop(string("<%"))
-    |> drop(whitespace())
-    |> keep(
-      take_while(fn(c) { c == "}" || c == ")" || c == " " })
-      |> then(fn(block) {
-        block
-        |> string.trim()
-        |> commit()
-      }),
-    )
-    |> drop(whitespace())
-    |> drop(string("%>"))
-    |> drop(whitespace()),
-  )
-}
-
-pub fn doc_type_declaration() {
-  succeed(DocTypeDeclaration)
+pub fn ghp_element() {
+  succeed(curry3(Element))
   |> drop(whitespace())
-  |> drop(string("<!DOCTYPE html>"))
+  |> keep(documents())
   |> drop(whitespace())
+  |> drop(string("<-<"))
 }
 
 /// Parses a list of attributes
@@ -266,13 +173,6 @@ pub fn text() -> nibble.Parser(Element, a) {
 
 pub fn document() -> nibble.Parser(Element, a) {
   one_of([
-    doc_type_declaration(),
-    import_block(),
-    comment(),
-    html_comment(),
-    opening_scope(),
-    closing_scope(),
-    quoted_block(),
     // Void is backtrackable, if it fails it will rollback and try element
     void_element(),
     element(),
@@ -280,22 +180,22 @@ pub fn document() -> nibble.Parser(Element, a) {
   ])
 }
 
-pub fn documents() -> nibble.Parser(List(Element), a) {
+pub fn tokens() -> nibble.Parser(List(Token), a) {
   loop(
     [],
-    fn(documents) {
+    fn(tokens) {
       one_of([
         eof()
-        |> nibble.replace(list.reverse(documents))
+        |> nibble.replace(list.reverse(tokens))
         |> nibble.map(nibble.Break),
-        document()
-        |> nibble.map(fn(el) { { nibble.Continue([el, ..documents]) } })
+        token()
+        |> nibble.map(fn(el) { { nibble.Continue([el, ..tokens]) } })
         |> drop(whitespace()),
       ])
     },
   )
 }
 
-pub fn parse(input: String) -> Result(List(Element), List(nibble.DeadEnd(a))) {
-  nibble.run(input, documents())
+pub fn parse(input: String) -> Result(List(Token), List(nibble.DeadEnd(a))) {
+  nibble.run(input, tokens())
 }
