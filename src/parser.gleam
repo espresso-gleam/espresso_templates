@@ -3,6 +3,7 @@ import nibble.{
   backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
   take_until, take_while, then, whitespace,
 }
+import gleam/io
 import gleam/list
 import gleam/string
 
@@ -14,38 +15,7 @@ pub type Attributes =
   List(Attribute)
 
 pub type Children =
-  List(Element)
-
-pub type Element {
-  Text(String)
-  Element(tag_name: String, attributes: Attributes, children: Children)
-}
-
-pub type Document =
   List(Token)
-
-pub type Token {
-  GleamCode(String)
-  GHPElement
-}
-
-pub fn code_parser() {
-  one_of([gleam_code(), ghp_element()])
-}
-
-pub fn gleam_code() {
-  succeed(GleamCode)
-  |> drop(whitespace())
-  |> drop(string(">->"))
-}
-
-pub fn ghp_element() {
-  succeed(curry3(Element))
-  |> drop(whitespace())
-  |> keep(documents())
-  |> drop(whitespace())
-  |> drop(string("<-<"))
-}
 
 /// Parses a list of attributes
 /// class="stuff" id="thing" -> [Attribute("id", "thing"), Attribute("class", "stuff")]
@@ -80,7 +50,7 @@ pub fn attribute() -> nibble.Parser(Attribute, a) {
 
 fn trailing_tag(
   children: Children,
-) -> nibble.Parser(nibble.Loop(List(Element), a), b) {
+) -> nibble.Parser(nibble.Loop(List(Token), a), b) {
   string("</")
   |> nibble.replace(list.reverse(children))
   |> nibble.map(nibble.Break)
@@ -92,9 +62,9 @@ fn trailing_tag(
 /// void_element parses elements that have no children
 /// 
 /// https://developer.mozilla.org/en-US/docs/Glossary/Void_element
-pub fn void_element() {
+pub fn void_element() -> nibble.Parser(Token, a) {
   backtrackable(
-    succeed(curry3(Element))
+    succeed(curry3(HtmlElement))
     // Tag name
     |> drop(whitespace())
     |> drop(string("<"))
@@ -126,18 +96,20 @@ pub fn void_elements() {
   })
 }
 
-pub fn element() {
-  succeed(curry3(Element))
-  // Tag name
-  |> drop(whitespace())
-  |> drop(string("<"))
-  |> keep(take_until(fn(c) { c == " " || c == "/" || c == ">" }))
-  |> drop(whitespace())
-  // Attributes
-  |> keep(attributes())
-  |> drop(whitespace())
-  |> keep(children())
-  |> drop(whitespace())
+pub fn element() -> nibble.Parser(Token, a) {
+  backtrackable(
+    succeed(curry3(HtmlElement))
+    // Tag name
+    |> drop(whitespace())
+    |> drop(string("<"))
+    |> keep(take_until(fn(c) { c == " " || c == "/" || c == ">" }))
+    |> drop(whitespace())
+    // Attributes
+    |> keep(attributes())
+    |> drop(whitespace())
+    |> keep(children())
+    |> drop(whitespace()),
+  )
 }
 
 pub fn children() {
@@ -149,7 +121,7 @@ pub fn children() {
         eof()
         |> nibble.replace(list.reverse(children))
         |> nibble.map(nibble.Break),
-        document()
+        html()
         |> nibble.map(fn(child) { { nibble.Continue([child, ..children]) } })
         |> drop(whitespace()),
       ])
@@ -157,26 +129,45 @@ pub fn children() {
   )
 }
 
-pub fn text() -> nibble.Parser(Element, a) {
-  succeed(Text)
-  |> drop(whitespace())
-  |> keep(
-    take_while(fn(c) { c != "<" })
-    |> then(fn(comment) {
-      comment
-      |> string.trim()
-      |> commit()
-    }),
+pub fn text() -> nibble.Parser(Token, a) {
+  backtrackable(
+    succeed(Text)
+    |> drop(whitespace())
+    |> keep(
+      take_while(fn(c) { c != "<" })
+      |> then(fn(comment) {
+        comment
+        |> string.trim()
+        |> commit()
+      }),
+    )
+    |> drop(whitespace()),
   )
-  |> drop(whitespace())
 }
 
-pub fn document() -> nibble.Parser(Element, a) {
+pub fn html() -> nibble.Parser(Token, a) {
+  one_of([void_element(), element(), text()])
+}
+
+pub type Token {
+  Gleam(String)
+  Text(String)
+  HtmlElement(tag_name: String, attributes: Attributes, children: Children)
+}
+
+pub fn gleam_code() -> nibble.Parser(Token, a) {
+  succeed(Gleam)
+  |> drop(whitespace())
+  |> keep(take_while(fn(c) { c != ">" }))
+}
+
+pub fn token() -> nibble.Parser(Token, a) {
   one_of([
-    // Void is backtrackable, if it fails it will rollback and try element
-    void_element(),
-    element(),
-    text(),
+    gleam_code()
+    |> drop(string(">->")),
+    html()
+    |> drop(string("<-<")),
+    gleam_code(),
   ])
 }
 
@@ -189,7 +180,10 @@ pub fn tokens() -> nibble.Parser(List(Token), a) {
         |> nibble.replace(list.reverse(tokens))
         |> nibble.map(nibble.Break),
         token()
-        |> nibble.map(fn(el) { { nibble.Continue([el, ..tokens]) } })
+        |> nibble.map(fn(el) {
+          io.debug(el)
+          nibble.Continue([el, ..tokens])
+        })
         |> drop(whitespace()),
       ])
     },

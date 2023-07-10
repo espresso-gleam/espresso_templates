@@ -1,9 +1,8 @@
 import gleeunit
 import gleeunit/should
 import parser.{
-  Attribute, Block, ClosingScope, Comment, DocTypeDeclaration, Element, Import,
-  OpeningScope, Text, attribute, attributes, comment, document, documents,
-  element, html_comment, opening_scope, quoted_block, text,
+  Attribute, Gleam, HtmlElement, Text, attribute, attributes, element, text,
+  tokens, void_element,
 }
 import nibble.{run}
 
@@ -28,35 +27,7 @@ pub fn attributes_parser_test() {
   )
 }
 
-// COMMENTS
-
-pub fn comment_parser_test() {
-  let result =
-    run(
-      "
-    <%% Multi line comments inside of this thing
-    this one has
-    more than one line.
-    %%>
-  ",
-      comment(),
-    )
-
-  should.equal(
-    result,
-    Ok(Comment(
-      "Multi line comments inside of this thing\n    this one has\n    more than one line.",
-    )),
-  )
-}
-
-pub fn html_comment_test() {
-  let result = run("<!-- Write your comments here -->", html_comment())
-
-  should.equal(result, Ok(Comment("Write your comments here")))
-}
-
-// Elements
+// HtmlElements
 pub fn text_test() {
   let result = run("Stuff", text())
 
@@ -64,20 +35,20 @@ pub fn text_test() {
 }
 
 pub fn text_document_element_test() {
-  let result = run("Stuff", document())
+  let result = run("Stuff", text())
 
   should.equal(result, Ok(Text("Stuff")))
 }
 
 pub fn document_element_no_attributes_test() {
-  let result = run("<div>Stuff</div>", document())
+  let result = run("<div>Stuff</div>", element())
 
-  should.equal(result, Ok(Element("div", [], [Text("Stuff")])))
+  should.equal(result, Ok(HtmlElement("div", [], [Text("Stuff")])))
 }
 
 pub fn self_closing_element_without_attrs_test() {
-  let result = run("<br/>", document())
-  should.equal(result, Ok(Element("br", [], [])))
+  let result = run("<br/>", void_element())
+  should.equal(result, Ok(HtmlElement("br", [], [])))
 }
 
 pub fn self_closing_element_with_attrs_test() {
@@ -89,7 +60,7 @@ pub fn self_closing_element_with_attrs_test() {
 
   should.equal(
     result,
-    Ok(Element(
+    Ok(HtmlElement(
       "link",
       [
         Attribute("rel", "stylesheet"),
@@ -104,21 +75,21 @@ pub fn nested_self_closing_element_test() {
   let result =
     run(
       "<head>
-        <meta lang=\"en\">
-        <link rel=\"stylesheet\" href=\"https://stuff.thing/app.css\" />
-        <script src=\"app.js\"></script>
-      </head>",
+         <meta lang=\"en\">
+         <link rel=\"stylesheet\" href=\"https://stuff.thing/app.css\" />
+         <script src=\"app.js\"></script>
+       </head>",
       element(),
     )
 
   should.equal(
     result,
-    Ok(Element(
+    Ok(HtmlElement(
       "head",
       [],
       [
-        Element("meta", [Attribute("lang", "en")], []),
-        Element(
+        HtmlElement("meta", [Attribute("lang", "en")], []),
+        HtmlElement(
           "link",
           [
             Attribute("rel", "stylesheet"),
@@ -126,7 +97,7 @@ pub fn nested_self_closing_element_test() {
           ],
           [],
         ),
-        Element("script", [Attribute("src", "app.js")], []),
+        HtmlElement("script", [Attribute("src", "app.js")], []),
       ],
     )),
   )
@@ -136,19 +107,19 @@ pub fn self_closing_siblings_test() {
   let result =
     run(
       "<main>
-        <img src=\"https://placekitten.com/200/300\" alt=\"kitten\" />
-        <div class=\"thing\"></div>
-      </main>",
+         <img src=\"https://placekitten.com/200/300\" alt=\"kitten\" />
+         <div class=\"thing\"></div>
+       </main>",
       element(),
     )
 
   should.equal(
     result,
-    Ok(Element(
+    Ok(HtmlElement(
       "main",
       [],
       [
-        Element(
+        HtmlElement(
           "img",
           [
             Attribute("src", "https://placekitten.com/200/300"),
@@ -156,152 +127,57 @@ pub fn self_closing_siblings_test() {
           ],
           [],
         ),
-        Element("div", [Attribute("class", "thing")], []),
+        HtmlElement("div", [Attribute("class", "thing")], []),
       ],
     )),
   )
 }
 
-pub fn document_element_nested_test() {
+// Gleam code
+
+pub fn gleam_code_test() {
   let result =
     run(
-      "
-      <div>Top level thing here</div>
+      "import espresso/html.{a, c, t, txt}
+import gleam/list
 
-      <div>
-      <%^ import gleam/list ^%>
-      <%% Commented thing %%>
-    <p>Things go <b>here</b> but not
-    over here</p>
-  </div>",
-      documents(),
+pub type Params {
+  Params(items: List(String))
+}
+
+pub fn notes(params: Params) {
+  >->
+  <ul>
+    list.map(params.items, fn(item) {
+      note(item)
+    }
+  </ul>
+  <-<
+}
+
+pub fn note(content: String) {
+  >->
+  <div>{item}</div>
+  <-<
+}
+",
+      tokens(),
     )
 
   should.equal(
     result,
     Ok([
-      Element("div", [], [Text("Top level thing here")]),
-      Element(
-        "div",
+      Gleam(
+        "import espresso/html.{a, c, t, txt}\nimport gleam/list\n\npub type Params {\n  Params(items: List(String))\n}\n\npub fn notes(params: Params) {\n  ",
+      ),
+      HtmlElement(
+        "ul",
         [],
-        [
-          Import("import gleam/list"),
-          Comment("Commented thing"),
-          Element(
-            "p",
-            [],
-            [
-              Text("Things go"),
-              Element("b", [], [Text("here")]),
-              Text("but not\n    over here"),
-            ],
-          ),
-        ],
+        [Text("list.map(params.items, fn(item) {\n      note(item)\n    }")],
       ),
+      Gleam("}\n\npub fn note(content: String) {\n  "),
+      HtmlElement("div", [], [Text("{item}")]),
+      Gleam("}\n"),
     ]),
-  )
-}
-
-pub fn document_header_test() {
-  let result =
-    run(
-      "
-      <!DOCTYPE html>
-<html lang=\"en\">
-  <!-- This is the head -->
-  <head></head>
-  <body>
-    <h1>Test</h1>
-    <p>Test</p>
-  </body>
-</html>",
-      documents(),
-    )
-
-  should.equal(
-    result,
-    Ok([
-      DocTypeDeclaration,
-      Element(
-        "html",
-        [Attribute("lang", "en")],
-        [
-          Comment("This is the head"),
-          Element("head", [], []),
-          Element(
-            "body",
-            [],
-            [
-              Element("h1", [], [Text("Test")]),
-              Element("p", [], [Text("Test")]),
-            ],
-          ),
-        ],
-      ),
-    ]),
-  )
-}
-
-pub fn quoted_block_test() {
-  let result = run("<% list.map(items, fn(item) { %>", quoted_block())
-  should.equal(result, Ok(Block("list.map(items, fn(item) {")))
-}
-
-pub fn quoted_block_nested_test() {
-  let result =
-    run(
-      "
-  <body>
-    <h1>Test</h1>
-    <% list.map(items, fn(item) { %>
-      <p><% item %></p>
-    <% }) %>
-  </body>
-  ",
-      document(),
-    )
-  should.equal(
-    result,
-    Ok(Element(
-      tag_name: "body",
-      attributes: [],
-      children: [
-        Element(tag_name: "h1", attributes: [], children: [Text("Test")]),
-        OpeningScope(
-          header: "list.map(items, fn(item) {",
-          children: [
-            Element(tag_name: "p", attributes: [], children: [Block("item")]),
-            ClosingScope("})"),
-          ],
-        ),
-      ],
-    )),
-  )
-}
-
-pub fn scoped_block_parser_test() {
-  let result =
-    run(
-      "
-  <% list.map(params.items, fn(item) { %>
-    <p>Thing: <% txt(item) %></p>
-  <% }) %>
-  ",
-      opening_scope(),
-    )
-
-  should.equal(
-    result,
-    Ok(OpeningScope(
-      header: "list.map(params.items, fn(item) {",
-      children: [
-        Element(
-          tag_name: "p",
-          attributes: [],
-          children: [Text("Thing:"), Block("txt(item)")],
-        ),
-        ClosingScope("})"),
-      ],
-    )),
   )
 }

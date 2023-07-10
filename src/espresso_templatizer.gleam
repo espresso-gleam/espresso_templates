@@ -32,7 +32,6 @@ fn convert(input: CommandInput) -> Nil {
     [] -> {
       io.println("At least one file is required.")
     }
-
     files -> {
       list.each(files, convert_file)
       io.println("Converted files: " <> string.join(files, ", "))
@@ -44,7 +43,6 @@ pub fn main() {
   let args =
     args()
     |> array.to_list()
-
   glint.new()
   |> glint.add_command(
     at: ["watch"],

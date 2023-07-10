@@ -1,35 +1,22 @@
 import gleam/list
 import gleam/io
 import gleam/string_builder.{StringBuilder}
-import parser.{
-  Block, Children, ClosingScope, Comment, Element, Import, OpeningScope, Text,
-}
+import parser.{Children, Gleam, HtmlElement, Text, Token}
 import system.{format}
 
-pub fn element_to_function_body(
+pub fn token_to_function_body(
   document: StringBuilder,
-  element: Element,
+  token: Token,
 ) -> StringBuilder {
-  case element {
-    OpeningScope(block, children) -> {
-      list.fold(
-        children,
-        string_builder.append(document, block),
-        element_to_function_body,
-      )
-    }
-    ClosingScope(block) -> string_builder.append(document, block)
-    Block(block) -> string_builder.append(document, block)
-    Comment(text) -> string_builder.append(document, "// " <> text)
-    Element(tag_name, attributes, children) -> {
+  case token {
+    HtmlElement(tag_name, attributes, children) -> {
       document
       |> render_tag(tag_name)
       |> render_attributes(attributes)
       |> render_children(children)
     }
-    Text(text) -> string_builder.append(document, "txt(\"" <> text <> "\")")
-
-    _ -> document
+    Text(text) -> string_builder.append(document, text)
+    Gleam(raw) -> string_builder.append(document, raw)
   }
 }
 
@@ -44,7 +31,7 @@ fn render_children(document: StringBuilder, children: Children) -> StringBuilder
           children,
           fn(child) {
             string_builder.new()
-            |> element_to_function_body(child)
+            |> token_to_function_body(child)
             |> string_builder.append(", ")
           },
         )
@@ -77,30 +64,12 @@ fn render_attributes(
   )
 }
 
-pub fn gather_imports(elements: List(Element), imports: String) -> String {
-  case elements {
-    [] -> imports
-    [Import(block), ..rest] -> {
-      let new_imports = imports <> block <> "\n"
-      gather_imports(rest, new_imports)
-    }
-    [_, ..rest] -> gather_imports(rest, imports)
-  }
-}
-
 pub fn to_gleam(input: String) -> Result(String, String) {
   let result = parser.parse(input)
   case result {
-    Ok(documents) -> {
-      let fun =
-        string_builder.new()
-        |> string_builder.append("import espresso/html.{t,c,a,txt}\n")
-        |> string_builder.append(gather_imports(documents, ""))
-        |> string_builder.append("pub fn render(params: Params) {\n")
-
-      documents
-      |> list.fold(fun, element_to_function_body)
-      |> string_builder.append("\n}")
+    Ok(blocks) -> {
+      blocks
+      |> list.fold(string_builder.new(), token_to_function_body)
       |> string_builder.to_string()
       |> format()
     }
