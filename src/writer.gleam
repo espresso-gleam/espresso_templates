@@ -144,22 +144,16 @@ fn used_imports(elements: List(Element), imports: Imports) -> Imports {
               _ -> imports.a
             }
 
-          let has_children =
-            imports.c || case im {
-              Element(_, _, _) -> True
-              _ -> imports.c
-            }
-
           case im {
             Text(_) ->
               used_imports(
                 rest,
-                Imports(txt: True, t: has_tag, a: has_attrs, c: has_children),
+                Imports(txt: True, t: has_tag, a: has_attrs, c: has_tag),
               )
             Element(_, _, children) ->
               used_imports(
                 children,
-                Imports(..imports, t: has_tag, a: has_attrs, c: has_children),
+                Imports(..imports, t: has_tag, a: has_attrs, c: has_tag),
               )
             _ -> used_imports(rest, imports)
           }
