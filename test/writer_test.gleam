@@ -18,7 +18,21 @@ pub fn nested_void_element_test() {
   should.equal(
     result,
     Ok(
-      "import espresso/html.{a, c, t, txt}\n\npub fn render(params: Params) {\n  t(\"main\")\n  |> c([\n    t(\"img\")\n    |> a(\"src\", \"https://placekitten.com/200/300\")\n    |> a(\"alt\", \"kitten\")\n    |> c([]),\n    t(\"div\")\n    |> a(\"class\", \"thing\")\n    |> c([]),\n  ])\n}\n",
+      "import espresso/html.{a, c, t}
+
+pub fn render(params: Params) {
+  t(\"main\")
+  |> c([
+    t(\"img\")
+    |> a(\"src\", \"https://placekitten.com/200/300\")
+    |> a(\"alt\", \"kitten\")
+    |> c([]),
+    t(\"div\")
+    |> a(\"class\", \"thing\")
+    |> c([]),
+  ])
+}
+",
     ),
   )
 }
@@ -37,7 +51,7 @@ pub fn block_loop_test() {
   should.equal(
     result,
     Ok(
-      "import espresso/html.{a, c, t, txt}
+      "import espresso/html.{a, c, t}
 
 pub fn render(params: Params) {
   t(\"main\")
@@ -73,7 +87,7 @@ pub fn single_block_children_test() {
   should.equal(
     result,
     Ok(
-      "import espresso/html.{a, c, t, txt}
+      "import espresso/html.{c, t}
 
 pub fn render(params: Params) {
   t(\"div\")
@@ -84,6 +98,59 @@ pub fn render(params: Params) {
       |> c([txt(\"Thing:\"), txt(item)])
     },
   ))
+}
+",
+    ),
+  )
+}
+
+pub fn only_imports_tags_and_children_test() {
+  let result = writer.to_gleam("<div></div>")
+
+  should.equal(
+    result,
+    Ok(
+      "import espresso/html.{c, t}
+
+pub fn render(params: Params) {
+  t(\"div\")
+  |> c([])
+}
+",
+    ),
+  )
+}
+
+pub fn only_imports_tags_children_attr_test() {
+  let result = writer.to_gleam("<div class=\"stuff\"></div>")
+
+  should.equal(
+    result,
+    Ok(
+      "import espresso/html.{a, c, t}
+
+pub fn render(params: Params) {
+  t(\"div\")
+  |> a(\"class\", \"stuff\")
+  |> c([])
+}
+",
+    ),
+  )
+}
+
+pub fn imports_all_test() {
+  let result = writer.to_gleam("<div class=\"stuff\">Stuff here</div>")
+
+  should.equal(
+    result,
+    Ok(
+      "import espresso/html.{a, c, t, txt}
+
+pub fn render(params: Params) {
+  t(\"div\")
+  |> a(\"class\", \"stuff\")
+  |> c([txt(\"Stuff here\")])
 }
 ",
     ),
