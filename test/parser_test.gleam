@@ -165,9 +165,11 @@ pub type Params {
 pub fn notes(params: Params) {
   >->
   <ul>
+  {
     list.map(params.items, fn(item) {
       note(item)
-    }
+    })
+  }
   </ul>
   <-<
 }
@@ -188,12 +190,59 @@ pub fn note(content: String) {
         "import espresso/html.{a, c, t, txt}\nimport gleam/list\n\npub type Params {\n  Params(items: List(String))\n}\n\npub fn notes(params: Params) {\n  ",
       ),
       HtmlElement(
-        "ul",
-        [],
-        [Text("list.map(params.items, fn(item) {\n      note(item)\n    }")],
+        tag_name: "ul",
+        attributes: [],
+        children: [
+          Gleam(
+            "\n    list.map(params.items, fn(item) {\n      note(item)\n    ",
+          ),
+          Text(")\n  }"),
+        ],
       ),
       Gleam("}\n\npub fn note(content: String) {\n  "),
-      HtmlElement("div", [], [Text("{item}")]),
+      HtmlElement(tag_name: "div", attributes: [], children: [Gleam("item")]),
+      Gleam("}\n"),
+    ]),
+  )
+}
+
+pub fn gleam_code_with_dynamic_children_test() {
+  let result =
+    run(
+      "import espresso/html.{a, c, t, txt}
+
+pub fn notes(items: List(String)) {
+  >->
+  <ul>
+  {
+    list.map(items, fn(item) {
+      >->
+      <li>{item}</li>
+      <-<
+    })
+  }
+  </ul>
+  <-<
+}
+",
+      parser.tokens(),
+    )
+
+  should.equal(
+    result,
+    Ok([
+      Gleam(
+        "import espresso/html.{a, c, t, txt}\n\npub fn notes(items: List(String)) {\n  ",
+      ),
+      HtmlElement(
+        tag_name: "ul",
+        attributes: [],
+        children: [
+          Gleam("\n    list.map(items, fn(item) {\n"),
+          HtmlElement(tag_name: "li", attributes: [], children: [Gleam("item")]),
+          Gleam("\n    })\n  "),
+        ],
+      ),
       Gleam("}\n"),
     ]),
   )

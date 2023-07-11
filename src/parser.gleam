@@ -3,6 +3,7 @@ import nibble.{
   backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
   take_until, take_while, then, whitespace,
 }
+import gleam/io
 import gleam/list
 import gleam/string
 
@@ -133,11 +134,24 @@ pub fn children() {
         eof()
         |> nibble.replace(list.reverse(children))
         |> nibble.map(nibble.Break),
+        bracketed_block()
+        |> nibble.map(fn(child) { nibble.Continue([child, ..children]) }),
         html()
-        |> nibble.map(fn(child) { { nibble.Continue([child, ..children]) } })
+        |> nibble.map(fn(child) { nibble.Continue([child, ..children]) })
         |> drop(whitespace()),
       ])
     },
+  )
+}
+
+pub fn bracketed_block() {
+  backtrackable(
+    succeed(Gleam)
+    |> drop(whitespace())
+    |> drop(string("{"))
+    |> keep(take_while(fn(c) { c != "}" }))
+    |> drop(string("}"))
+    |> drop(whitespace()),
   )
 }
 
