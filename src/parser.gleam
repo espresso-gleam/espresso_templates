@@ -6,26 +6,24 @@ import gleam/list
 import gleam/string
 import parser/grammar.{GHP, Grammar, Text}
 import parser/elements.{elements}
+// pub fn grammar() -> nibble.Parser(Grammar, a) {
+//   one_of([ghp(), elements()])
+// }
 
-pub fn grammar() -> nibble.Parser(Grammar, a) {
-  one_of([ghp(), elements()])
-}
-
-pub fn grammar_loop() -> nibble.Parser(List(Grammar), a) {
-  loop(
-    [],
-    fn(g) {
-      one_of([
-        eof()
-        |> nibble.replace(list.reverse(g))
-        |> nibble.map(nibble.Break),
-        grammar()
-        |> nibble.map(fn(el) { nibble.Continue([el, ..g]) }),
-      ])
-    },
-  )
-}
-
+// pub fn grammar_loop() -> nibble.Parser(List(Grammar), a) {
+//   loop(
+//     [],
+//     fn(g) {
+//       one_of([
+//         eof()
+//         |> nibble.replace(list.reverse(g))
+//         |> nibble.map(nibble.Break),
+//         grammar()
+//         |> nibble.map(fn(el) { nibble.Continue([el, ..g]) }),
+//       ])
+//     },
+//   )
+// }
 // pub fn ghp() -> nibble.Parser(Grammar, a) {
 //   succeed(GHP)
 //   |> drop(whitespace())
@@ -62,5 +60,5 @@ pub fn grammar_loop() -> nibble.Parser(List(Grammar), a) {
 // }
 // pub fn parse(input: String) -> Result(List(Grammar), List(nibble.DeadEnd(a))) {
 //   nibble.run(input, grammar_loop())
-}
+// }
 // 

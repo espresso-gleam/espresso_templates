@@ -117,8 +117,8 @@ fn balance_braces(count: Int, current: String) -> nibble.Parser(String, a) {
         1 ->
           // we've balanced the braces, so return the collected string
           current
-          |> parser.run()
-          |> result.unwrap("")
+          // |> parser.run()
+          // |> result.unwrap("")
           |> nibble.succeed()
         _ ->
           // still more closing braces to find
