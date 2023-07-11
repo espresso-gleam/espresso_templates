@@ -1,7 +1,9 @@
 import gleam/list
 import gleam/io
 import gleam/string_builder.{StringBuilder}
-import parser.{Children, Gleam, HtmlElement, Text, Token}
+import parser.{
+  Attribute, Children, Gleam, GleamAttribute, HtmlElement, Text, Token,
+}
 import system.{format}
 
 pub fn token_to_function_body(
@@ -56,10 +58,18 @@ fn render_attributes(
     attributes,
     document,
     fn(document, attr) {
-      string_builder.append(
-        document,
-        " |> a(\"" <> attr.name <> "\", \"" <> attr.value <> "\")",
-      )
+      case attr {
+        Attribute(name, value) ->
+          string_builder.append(
+            document,
+            " |> a(\"" <> name <> "\", \"" <> value <> "\")",
+          )
+        GleamAttribute(name, value) ->
+          string_builder.append(
+            document,
+            " |> a(\"" <> name <> "\", " <> value <> ")",
+          )
+      }
     },
   )
 }

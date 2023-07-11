@@ -1,8 +1,8 @@
 import gleeunit
 import gleeunit/should
 import parser.{
-  Attribute, Gleam, HtmlElement, Text, attribute, attributes, element, text,
-  tokens, void_element,
+  Attribute, Gleam, GleamAttribute, HtmlElement, Text, attribute, attributes,
+  element, text, tokens, void_element,
 }
 import nibble.{run}
 
@@ -24,6 +24,23 @@ pub fn attributes_parser_test() {
   should.equal(
     result,
     Ok([Attribute("id", "4"), Attribute("class", "text-white flex")]),
+  )
+}
+
+pub fn dynamic_attributes_test() {
+  let result =
+    run(
+      "id=\"4\" class=\"text-white flex\" href={\"/thing/\" <> id}",
+      attributes(),
+    )
+
+  should.equal(
+    result,
+    Ok([
+      Attribute("id", "4"),
+      Attribute("class", "text-white flex"),
+      GleamAttribute("href", "\"/thing/\" <> id"),
+    ]),
   )
 }
 

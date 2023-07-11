@@ -3,12 +3,12 @@ import nibble.{
   backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
   take_until, take_while, then, whitespace,
 }
-import gleam/io
 import gleam/list
 import gleam/string
 
 pub type Attribute {
   Attribute(name: String, value: String)
+  GleamAttribute(name: String, value: String)
 }
 
 pub type Attributes =
@@ -27,6 +27,8 @@ pub fn attributes() {
         one_of([string("/"), string(">"), eof()])
         |> nibble.replace(list.reverse(attrs))
         |> nibble.map(nibble.Break),
+        gleam_attr()
+        |> nibble.map(fn(attr) { nibble.Continue([attr, ..attrs]) }),
         nibble.map(
           attribute(),
           fn(attribute) { nibble.Continue([attribute, ..attrs]) },
@@ -34,6 +36,16 @@ pub fn attributes() {
       ])
     },
   )
+}
+
+pub fn gleam_attr() -> nibble.Parser(Attribute, a) {
+  succeed(curry2(GleamAttribute))
+  |> drop(whitespace())
+  |> keep(take_while(fn(c) { c != "=" }))
+  |> drop(string("={"))
+  |> keep(take_while(fn(c) { c != "}" }))
+  |> drop(string("}"))
+  |> drop(whitespace())
 }
 
 /// Parses html attributes
@@ -181,7 +193,7 @@ pub fn tokens() -> nibble.Parser(List(Token), a) {
         |> nibble.map(nibble.Break),
         token()
         |> nibble.map(fn(el) {
-          io.debug(el)
+          // io.debug(el)
           nibble.Continue([el, ..tokens])
         })
         |> drop(whitespace()),
