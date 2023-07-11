@@ -1,65 +1,14 @@
-import gleam/function.{curry2, curry3}
+import gleam/function.{curry3}
 import nibble.{
   backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
   take_until, take_while, then, whitespace,
 }
-import gleam/io
+import parser/attributes.{Attributes, attributes}
 import gleam/list
 import gleam/string
 
-pub type Attribute {
-  Attribute(name: String, value: String)
-  GleamAttribute(name: String, value: String)
-}
-
-pub type Attributes =
-  List(Attribute)
-
 pub type Children =
   List(Token)
-
-/// Parses a list of attributes
-/// class="stuff" id="thing" -> [Attribute("id", "thing"), Attribute("class", "stuff")]
-pub fn attributes() {
-  loop(
-    [],
-    fn(attrs) {
-      one_of([
-        one_of([string("/"), string(">"), eof()])
-        |> nibble.replace(list.reverse(attrs))
-        |> nibble.map(nibble.Break),
-        gleam_attr()
-        |> nibble.map(fn(attr) { nibble.Continue([attr, ..attrs]) }),
-        nibble.map(
-          attribute(),
-          fn(attribute) { nibble.Continue([attribute, ..attrs]) },
-        ),
-      ])
-    },
-  )
-}
-
-pub fn gleam_attr() -> nibble.Parser(Attribute, a) {
-  succeed(curry2(GleamAttribute))
-  |> drop(whitespace())
-  |> keep(take_while(fn(c) { c != "=" }))
-  |> drop(string("={"))
-  |> keep(take_while(fn(c) { c != "}" }))
-  |> drop(string("}"))
-  |> drop(whitespace())
-}
-
-/// Parses html attributes
-/// class="stuff" -> Attribute("class", "stuff")
-pub fn attribute() -> nibble.Parser(Attribute, a) {
-  succeed(curry2(Attribute))
-  |> drop(whitespace())
-  |> keep(take_while(fn(c) { c != "=" }))
-  |> drop(string("=\""))
-  |> keep(take_while(fn(c) { c != "\"" }))
-  |> drop(string("\""))
-  |> drop(whitespace())
-}
 
 fn trailing_tag(
   children: Children,

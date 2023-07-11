@@ -1,9 +1,8 @@
 import gleam/list
 import gleam/io
 import gleam/string_builder.{StringBuilder}
-import parser.{
-  Attribute, Children, Gleam, GleamAttribute, HtmlElement, Text, Token,
-}
+import parser.{Children, Gleam, HtmlElement, Text, Token}
+import parser/attributes.{Attribute, GleamAttribute}
 import system.{format}
 
 pub fn token_to_function_body(
@@ -52,7 +51,7 @@ fn render_tag(document: StringBuilder, tag_name: String) -> StringBuilder {
 
 fn render_attributes(
   document: StringBuilder,
-  attributes: List(parser.Attribute),
+  attributes: List(Attribute),
 ) -> StringBuilder {
   list.fold(
     attributes,
