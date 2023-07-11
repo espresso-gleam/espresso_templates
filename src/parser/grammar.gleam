@@ -2,6 +2,7 @@ import parser/attributes.{Attributes}
 
 pub type Grammar {
   GHP(children: List(Grammar))
+  GleamBlock(text: String)
   // "{|"
   GleamOpen(children: List(Grammar))
   // "|}"

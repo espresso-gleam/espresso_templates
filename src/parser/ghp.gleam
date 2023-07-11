@@ -1,6 +1,6 @@
 import gleam/list
 import nibble.{drop, eof, keep, loop, one_of, string, succeed, whitespace}
-import parser/grammar.{GHP, Grammar}
+import parser/grammar.{GHP, Grammar, Text}
 import parser/elements.{elements}
 
 pub fn opening_tag() {

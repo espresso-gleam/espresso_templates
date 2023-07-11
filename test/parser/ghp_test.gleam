@@ -1,7 +1,7 @@
 import gleeunit
 import gleeunit/should
 import nibble.{run}
-import parser/grammar.{GHP, HtmlElement, Text}
+import parser/grammar.{GHP, GleamBlock, HtmlElement, Text}
 import parser/ghp.{children, closing_tag, ghp, opening_tag}
 import parser/attributes.{Attribute}
 
@@ -56,6 +56,54 @@ pub fn html_inner_block_test() {
         tag_name: "div",
         attributes: [Attribute(name: "id", value: "thing")],
         children: [],
+      ),
+    ])),
+  )
+}
+
+pub fn html_with_gleam_block_test() {
+  let result =
+    run(
+      ">->
+<div class=\"bananas\">{\"shoe\"}</div>
+<-<",
+      ghp(),
+    )
+  should.equal(
+    result,
+    Ok(GHP(children: [
+      HtmlElement(
+        tag_name: "div",
+        attributes: [Attribute(name: "class", value: "bananas")],
+        children: [GleamBlock("\"shoe\"")],
+      ),
+    ])),
+  )
+}
+
+pub fn html_with_gleam_block_with_nested_braces_test() {
+  let result =
+    run(
+      ">->
+<div class=\"bananas\">{
+  let banana = fn (shoe) {
+    shoe
+  }
+  banana(\"lol\")
+  >->
+  <div class=\"red\">RED</div>
+  <-<
+}<p>lol</p></div>
+<-<",
+      ghp(),
+    )
+  should.equal(
+    result,
+    Ok(GHP(children: [
+      HtmlElement(
+        tag_name: "div",
+        attributes: [Attribute(name: "class", value: "bananas")],
+        children: [GleamBlock("\"shoe\"")],
       ),
     ])),
   )
