@@ -24,6 +24,15 @@ pub fn attributes_parser_test() {
   )
 }
 
+pub fn single_attribute_parser_test() {
+  let result = run("name=\"username\" required", attributes())
+
+  should.equal(
+    result,
+    Ok([Attribute("name", "username"), Attribute("required", "")]),
+  )
+}
+
 pub fn dynamic_attributes_test() {
   let result =
     run(

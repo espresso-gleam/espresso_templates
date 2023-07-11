@@ -1,6 +1,6 @@
 import gleam/function.{curry2}
 import nibble.{
-  drop, eof, keep, loop, one_of, string, succeed, take_while, whitespace,
+  commit, drop, eof, keep, loop, one_of, string, succeed, take_while, whitespace,
 }
 import gleam/list
 
@@ -46,11 +46,20 @@ pub fn gleam_attr() -> nibble.Parser(Attribute, a) {
 /// Parses html attributes
 /// class="stuff" -> Attribute("class", "stuff")
 pub fn attribute() -> nibble.Parser(Attribute, a) {
-  succeed(curry2(Attribute))
-  |> drop(whitespace())
-  |> keep(take_while(fn(c) { c != "=" }))
-  |> drop(string("=\""))
-  |> keep(take_while(fn(c) { c != "\"" }))
-  |> drop(string("\""))
-  |> drop(whitespace())
+  one_of([
+    succeed(curry2(Attribute))
+    |> drop(whitespace())
+    |> keep(take_while(fn(c) { c != "=" }))
+    |> drop(string("=\""))
+    |> keep(take_while(fn(c) { c != "\"" }))
+    |> drop(string("\""))
+    |> drop(whitespace()),
+    // Attributes without a value
+    // i.e. "selected" "checked"
+    succeed(curry2(Attribute))
+    |> drop(whitespace())
+    |> keep(take_while(fn(c) { c != " " && c != "=" && c != ">" }))
+    |> keep(commit(""))
+    |> drop(whitespace()),
+  ])
 }
