@@ -3,9 +3,6 @@ import gleam/javascript/array
 pub external fn stdin() -> String =
   "./native.mjs" "stdin"
 
-pub external fn test() -> Result(String, String) =
-  "./native.mjs" "test"
-
 pub external fn format(code: String) -> Result(String, String) =
   "./native.mjs" "format"
 

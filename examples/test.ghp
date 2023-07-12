@@ -8,14 +8,18 @@ pub fn render(params: params) {
   >->
   <html>
     <head>
-      <title>"Espresso"</title>
+      <title>Espresso</title>
     </head>
     <body class="w-full h-full">
-      <h1 class="text-4xl">"This is a header"</h1>
+      <h1 class="text-4xl">This is a header</h1>
 
-      list.map(params.items, fn(item) {
-        <p>"Thing: item"</p>
-      })
+      {
+        list.map(params.items, fn(item) {
+          >->
+          <p>Thing: {item}</p>
+          <-<
+        })
+      }
     </body>
   </html>
   <-<

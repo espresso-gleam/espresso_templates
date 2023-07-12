@@ -2,12 +2,10 @@ import gleam/function.{curry2, curry3}
 import gleam/list
 import nibble.{
   backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
-  take_until, take_while, then, whitespace,
+  take_until, take_while, whitespace,
 }
 import parser/attributes.{attributes}
 import parser/grammar.{Block, GHP, GleamBlock, Grammar, HtmlElement, Text}
-import gleam/string
-import gleam/io
 
 /// void_element parses elements that have no children
 /// 
@@ -77,14 +75,7 @@ pub fn elements() -> nibble.Parser(Grammar, a) {
 pub fn text() {
   succeed(Text)
   |> drop(whitespace())
-  |> keep(
-    take_while(fn(c) { c != "<" })
-    |> then(fn(comment) {
-      comment
-      |> string.trim()
-      |> commit()
-    }),
-  )
+  |> keep(take_while(fn(c) { c != "<" && c != "{" }))
   |> drop(whitespace())
 }
 

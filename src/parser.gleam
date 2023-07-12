@@ -1,4 +1,6 @@
-import parser/grammar.{GleamBlock, Grammar, Text}
-import gleam/io
-import gleam/list
-import gleam/string
+import nibble
+import parser/elements.{full_block}
+
+pub fn parse(code: String) {
+  nibble.run(code, full_block())
+}
