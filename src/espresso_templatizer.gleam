@@ -3,13 +3,25 @@ import gleam/list
 import gleam/javascript/array
 import gleam/string
 import glint.{CommandInput}
+import glint/flag
 import system.{args, base_name, dirname, read_file, write_file}
 import writer
 
 fn watch(input: CommandInput) {
-  input.args
-  |> array.from_list()
-  |> system.watch(convert_file)
+  case flag.get(input.flags, "files") {
+    Ok(flag.S("")) ->
+      ["**/*.ghp"]
+      |> array.from_list()
+      |> system.watch(convert_file)
+    Ok(flag.S(files)) ->
+      [files]
+      |> array.from_list()
+      |> system.watch(convert_file)
+    _ -> {
+      io.debug("Invalid watch usage")
+      Nil
+    }
+  }
 }
 
 fn convert_file(path: String) -> Result(Nil, String) {

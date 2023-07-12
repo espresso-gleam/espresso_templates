@@ -45,5 +45,6 @@ export function watch(glob, callback) {
   console.log("Watching for changes to", JSON.stringify(glob, null, 2));
   chokidar.watch(glob).on("change", (file) => {
     callback(path.resolve(file));
+    console.log("Processed:", file);
   });
 }
