@@ -88,7 +88,8 @@ pub fn nested_render_test() {
 
   should.equal(
     result,
-    Ok("pub fn main() {
+    Ok(
+      "pub fn main() {
   html.t(\"main\")
   |> html.c([
     html.t(\"img\")
@@ -114,6 +115,7 @@ pub fn nested_render_test() {
     }),
   ])
 }
-")
+",
+    ),
   )
 }
