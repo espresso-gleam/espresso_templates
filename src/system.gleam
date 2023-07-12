@@ -1,28 +1,26 @@
 import gleam/javascript/array
 
-pub external fn stdin() -> String =
-  "./native.mjs" "stdin"
+@external(javascript, "./native.mjs", "stdin")
+pub fn stdin() -> String
 
-pub external fn format(code: String) -> Result(String, String) =
-  "./native.mjs" "format"
+@external(javascript, "./native.mjs", "format")
+pub fn format(code code: String) -> Result(String, String)
 
-pub external fn args() -> array.Array(String) =
-  "./native.mjs" "args"
+@external(javascript, "./native.mjs", "args")
+pub fn args() -> array.Array(String)
 
-pub external fn read_file(path: String) -> String =
-  "./native.mjs" "read_file"
+@external(javascript, "./native.mjs", "read_file")
+pub fn read_file(path path: String) -> String
 
-pub external fn base_name(path: String) -> String =
-  "./native.mjs" "base_name"
+@external(javascript, "./native.mjs", "base_name")
+pub fn base_name(path path: String) -> String
 
-pub external fn dirname(path: String) -> String =
-  "./native.mjs" "dirname"
+@external(javascript, "./native.mjs", "dirname")
+pub fn dirname(path path: String) -> String
 
-pub external fn write_file(path: String, contents: String) -> Nil =
-  "./native.mjs" "write_file"
+@external(javascript, "./native.mjs", "write_file")
+pub fn write_file(path path: String, contents contents: String) -> Nil
 
-pub external fn watch(
-  paths: array.Array(String),
-  callback: fn(String) -> Result(Nil, String),
-) -> Nil =
-  "./native.mjs" "watch"
+@external(javascript, "./native.mjs", "watch")
+pub fn watch(paths paths: array.Array(String), callback callback: fn(String) ->
+    Result(Nil, String)) -> Nil
