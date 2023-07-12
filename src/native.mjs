@@ -48,7 +48,3 @@ export function watch(glob, callback) {
     console.log("Processed:", file);
   });
 }
-
-export function test() {
-  return new gleam.Error("Not implemented yet");
-}
