@@ -1,8 +1,8 @@
 import gleeunit
 import gleeunit/should
 import nibble.{run}
-import parser/grammar.{GHP, GleamBlock, HtmlElement, Text}
-import parser/ghp.{children, closing_tag, ghp, opening_tag}
+import parser/grammar.{Block, GHP, GleamBlock, HtmlElement, Text}
+import parser/elements.{closing_tag, full_block, ghp, ghp_children, opening_tag}
 import parser/attributes.{Attribute}
 
 pub fn main() {
@@ -24,7 +24,7 @@ pub fn closing_tag_test() {
 // Children
 
 pub fn empty_children_test() {
-  let result = run("", children())
+  let result = run("", ghp_children())
   should.equal(result, Ok([]))
 }
 
@@ -75,7 +75,7 @@ pub fn html_with_gleam_block_test() {
       HtmlElement(
         tag_name: "div",
         attributes: [Attribute(name: "class", value: "bananas")],
-        children: [GleamBlock("\"shoe\"")],
+        children: [GleamBlock(text: Block(gleam: "\"shoe\"", children: []))],
       ),
     ])),
   )
@@ -84,27 +84,64 @@ pub fn html_with_gleam_block_test() {
 pub fn html_with_gleam_block_with_nested_braces_test() {
   let result =
     run(
-      ">->
-<div class=\"bananas\">{
-  let banana = fn (shoe) {
-    shoe
-  }
-  banana(\"lol\")
+      "
+import gleam/list      
+
+pub fn main() {
+  let stuff = \"a stuff\"
+  
   >->
-  <div class=\"red\">RED</div>
+  <div class=\"bananas\">
+    <h1>{stuff}</h1>
+    {
+      let banana = fn (shoe) {
+        shoe
+      }
+      banana(\"lol\")
+      
+      >->
+      <div class=\"red\">RED</div>
+      <-<
+    }
+  </div>
   <-<
-}<p>lol</p></div>
-<-<",
-      ghp(),
+}",
+      full_block(),
     )
   should.equal(
     result,
-    Ok(GHP(children: [
-      HtmlElement(
-        tag_name: "div",
-        attributes: [Attribute(name: "class", value: "bananas")],
-        children: [GleamBlock("\"shoe\"")],
-      ),
-    ])),
+    Ok(Block(
+      gleam: "\nimport gleam/list      \n\npub fn main() {\n  let stuff = \"a stuff\"\n  \n  ",
+      children: [
+        GHP(children: [
+          HtmlElement(
+            tag_name: "div",
+            attributes: [Attribute(name: "class", value: "bananas")],
+            children: [
+              HtmlElement(
+                tag_name: "h1",
+                attributes: [],
+                children: [
+                  GleamBlock(text: Block(gleam: "stuff", children: [])),
+                ],
+              ),
+              GleamBlock(text: Block(
+                gleam: "\n      let banana = fn (shoe) {\n        shoe\n      }\n      banana(\"lol\")\n      \n      ",
+                children: [
+                  GHP(children: [
+                    HtmlElement(
+                      tag_name: "div",
+                      attributes: [Attribute(name: "class", value: "red")],
+                      children: [Text("RED")],
+                    ),
+                  ]),
+                ],
+              )),
+            ],
+          ),
+        ]),
+        Text("}"),
+      ],
+    )),
   )
 }

@@ -1,12 +1,13 @@
-import gleam/function.{curry3}
+import gleam/function.{curry2, curry3}
 import gleam/list
 import nibble.{
   backtrackable, commit, drop, eof, keep, loop, one_of, string, succeed,
   take_until, take_while, then, whitespace,
 }
 import parser/attributes.{attributes}
-import parser/grammar.{GHP, GleamBlock, Grammar, HtmlElement, Text}
+import parser/grammar.{Block, GHP, GleamBlock, Grammar, HtmlElement, Text}
 import gleam/string
+import gleam/io
 
 /// void_element parses elements that have no children
 /// 
@@ -44,16 +45,6 @@ fn void_elements() {
     |> nibble.map(fn(_) { el })
   })
 }
-
-// fn gleam_block() -> nibble.Parser(Grammar, a) {
-//   nibble.succeed(GHP)
-//   |> nibble.drop(nibble.string("{"))
-//   |> nibble.keep(balance_braces(1, ""))
-//   // start with a count of 1 since we've consumed an open brace
-//   // this will consume the closing brace
-//   |> nibble.drop(nibble.whitespace())
-//   |> nibble.inspect("block_as_text")
-// }
 
 pub fn element() -> nibble.Parser(Grammar, a) {
   backtrackable(
@@ -97,29 +88,22 @@ pub fn text() {
   |> drop(whitespace())
 }
 
-fn text_outside() -> nibble.Parser(String, a) {
-  nibble.take_while(fn(c) { c != "{" })
-  |> nibble.drop(nibble.whitespace())
-  |> nibble.inspect("text_outside")
-}
-
-fn text_inside() -> nibble.Parser(String, a) {
-  nibble.take_while(fn(c) { c != "{" && c != "}" })
-  |> nibble.drop(nibble.whitespace())
-  |> nibble.inspect("text_inside")
-}
-
-fn balance_braces(count: Int, current: String) -> nibble.Parser(String, a) {
+fn balance_braces(count: Int, current: String) -> nibble.Parser(Grammar, a) {
   nibble.one_of([
     nibble.string("}")
     |> nibble.then(fn(_c) {
       case count {
         1 ->
           // we've balanced the braces, so return the collected string
-          current
-          // |> parser.run()
-          // |> result.unwrap("")
-          |> nibble.succeed()
+          case nibble.run(current, full_block()) {
+            Ok(result) -> {
+              nibble.succeed(result)
+            }
+            Error(_) -> {
+              nibble.succeed(Text(current))
+            }
+          }
+
         _ ->
           // still more closing braces to find
           balance_braces(count - 1, current <> "}")
@@ -138,7 +122,7 @@ fn balance_braces(count: Int, current: String) -> nibble.Parser(String, a) {
     nibble.eof()
     |> nibble.then(fn(_) {
       case count {
-        0 -> nibble.succeed(current)
+        0 -> nibble.succeed(Text(current))
         _ -> nibble.fail("Unbalanced braces")
       }
     }),
@@ -177,4 +161,46 @@ pub fn children() {
       ])
     },
   )
+}
+
+pub fn opening_tag() {
+  whitespace()
+  |> drop(string(">->"))
+  |> drop(whitespace())
+}
+
+pub fn closing_tag() {
+  whitespace()
+  |> drop(string("<-<"))
+  |> drop(whitespace())
+}
+
+pub fn ghp() -> nibble.Parser(Grammar, a) {
+  succeed(GHP)
+  |> drop(opening_tag())
+  |> keep(ghp_children())
+}
+
+pub fn ghp_children() -> nibble.Parser(List(Grammar), a) {
+  loop(
+    [],
+    fn(g) {
+      one_of([
+        closing_tag()
+        |> nibble.replace(list.reverse(g))
+        |> nibble.map(nibble.Break),
+        eof()
+        |> nibble.replace(list.reverse(g))
+        |> nibble.map(nibble.Break),
+        one_of([ghp(), elements()])
+        |> nibble.map(fn(el) { nibble.Continue([el, ..g]) }),
+      ])
+    },
+  )
+}
+
+pub fn full_block() -> nibble.Parser(Grammar, a) {
+  succeed(curry2(Block))
+  |> keep(take_while(fn(c) { c != ">" }))
+  |> keep(ghp_children())
 }
