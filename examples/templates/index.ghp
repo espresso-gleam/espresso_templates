@@ -1,7 +1,15 @@
-<main>  
-  <div id="notes" class="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    <% list.map(params.notes, fn(note) { %>
-      <% note.render(node) %>
-    <% }) %>
-  </div>
-</main>
+pub fn main() {
+  >->
+  <main>  
+    <div id="notes" class="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {
+        list.map(params.notes, fn(note) {
+          note.render(node)
+        })
+      }
+    </div>
+  </main>
+  <-<
+}
+
+
