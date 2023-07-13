@@ -6,8 +6,11 @@ Package that turns ghp formatted files into gleam code that can render in espres
 
 ```sh
 npm install -g espresso_templatizer
-espresso_templatizer watch --files="src/**/*.ghp"
-# OR
+# Watches **/*.ghp
+espresso_templatizer watch
+# Watches a specific path
+espresso_templatizer watch --files="templates/**/*.ghp"
+# Converts a specific file once
 espresso_templatizer convert src/my_file.ghp
 ```
 
