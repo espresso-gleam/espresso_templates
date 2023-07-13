@@ -1,3 +1,4 @@
+import espresso/html
 import gleam/list
 
 pub type Params {
@@ -5,35 +6,31 @@ pub type Params {
 }
 
 pub fn render(params: params) {
-  c([
-    t("html")
-    |> c([
-      t("head")
-      |> c([
-        t("title")
-        |> c([txt("Espresso")]),
-      ]),
-    ])
-    |> c([
-      t("body")
-      |> a("class", "w-full h-full")
-      |> c([
-        t("h1")
-        |> a("class", "text-4xl")
-        |> c([txt("This is a header")]),
-      ])
-      |> dyn(from({
-        list.map(
-          params.items,
-          fn(item) {
-            c([
-              t("p")
-              |> c([txt("Thing: ")])
-              |> dyn(from({ item })),
-            ])
-          },
-        )
-      })),
+  html.t("html")
+  |> html.c([
+    html.t("head")
+    |> html.c([
+      html.t("title")
+      |> html.c([html.txt("Espresso")]),
     ]),
+  ])
+  |> html.c([
+    html.t("body")
+    |> html.a("class", "w-full h-full")
+    |> html.c([
+      html.t("h1")
+      |> html.a("class", "text-4xl")
+      |> html.c([html.txt("This is a header")]),
+    ])
+    |> html.dyn({
+      list.map(
+        params.items,
+        fn(item) {
+          html.t("p")
+          |> html.c([html.txt("Thing: ")])
+          |> html.dyn({ item })
+        },
+      )
+    }),
   ])
 }

@@ -9,17 +9,14 @@ import writer
 
 fn watch(input: CommandInput) {
   case flag.get_string(from: input.flags, for: "files") {
-    Ok("") ->
-      ["**/*.ghp"]
-      |> array.from_list()
-      |> system.watch(convert_file)
     Ok(files) ->
       [files]
       |> array.from_list()
       |> system.watch(convert_file)
     _ -> {
-      io.debug("Invalid watch usage")
-      Nil
+      ["**/*.ghp"]
+      |> array.from_list()
+      |> system.watch(convert_file)
     }
   }
 }
