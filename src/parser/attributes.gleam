@@ -49,7 +49,7 @@ pub fn attribute() -> nibble.Parser(Attribute, a) {
   one_of([
     succeed(curry2(Attribute))
     |> drop(whitespace())
-    |> keep(take_while(fn(c) { c != "=" }))
+    |> keep(take_while(fn(c) { c != "=" && c != ">" }))
     |> drop(string("=\""))
     |> keep(take_while(fn(c) { c != "\"" }))
     |> drop(string("\""))
